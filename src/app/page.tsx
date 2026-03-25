@@ -134,7 +134,6 @@ export default function Home() {
                       if (window.confirm(`選手「${u.name}」とその記録をすべて削除しますか？`)) {
                         deleteStorageUser(u.id);
                         setUsers(prev => prev.filter(user => user.id !== u.id));
-                        if (currentUser?.id === u.id) handleLogout();
                       }
                     }}>
                       <Trash2 size={18} className="icon-accent" />

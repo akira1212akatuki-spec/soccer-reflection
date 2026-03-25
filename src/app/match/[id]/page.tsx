@@ -93,36 +93,38 @@ function MatchDetailContent() {
 
       <main className="main-content">
         <div className="glass-panel">
-          <div className="flex flex-col gap-4 mb-6">
-            <div className="text-muted" style={{ fontSize: '0.9rem', marginBottom: '4px' }}>
+          <div className="flex flex-col gap-2 mb-8">
+            <div className="text-muted" style={{ fontSize: '0.9rem', marginBottom: '8px' }}>
               {formattedDate}
             </div>
 
-            <div className="flex items-center justify-between gap-4">
-              <div style={{ flex: '1', minWidth: 0 }}>
-                <span style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--text-main)', display: 'block' }}>
-                  {match.type === 'practice' ? (match.practiceName || '練習メニュー') : match.opponent}
-                </span>
+            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--text-main)', marginBottom: '4px' }}>
+              {match.type === 'practice' ? (match.practiceName || '練習メニュー') : match.opponent}
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ 
+                color: match.type === 'practice' ? '#075985' : 
+                       (match.myScore! > match.opponentScore! ? '#166534' : 
+                        match.myScore! < match.opponentScore! ? '#991b1b' : '#475569'),
+                fontWeight: 800, 
+                fontSize: '0.9rem',
+                backgroundColor: match.type === 'practice' ? '#e0f2fe' : 
+                                (match.myScore! > match.opponentScore! ? '#dcfce7' : 
+                                 match.myScore! < match.opponentScore! ? '#fee2e2' : '#f1f5f9'),
+                padding: '4px 12px',
+                borderRadius: '6px'
+              }}>
+                {status}
               </div>
               
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ 
-                  color: resultColor, 
-                  fontWeight: 800, 
-                  fontSize: '0.9rem',
-                  backgroundColor: resultBg,
-                  padding: '4px 10px',
-                  borderRadius: '6px'
-                }}>
-                  {status}
+              {match.type !== 'practice' && (
+                <div style={{ fontSize: '2.25rem', fontWeight: 900, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>{match.myScore}</span>
+                  <span style={{ fontSize: '1.5rem', opacity: 0.3 }}>-</span>
+                  <span>{match.opponentScore}</span>
                 </div>
-                
-                {match.type !== 'practice' && (
-                  <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--text-main)' }}>
-                    {match.myScore} - {match.opponentScore}
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </div>
 

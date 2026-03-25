@@ -112,17 +112,17 @@ function NewMatchForm() {
       <main className="main-content" style={{ paddingBottom: '40px' }}>
         <form onSubmit={handleSubmit}>
           <div className="glass-panel mb-6">
-            <div className="flex bg-slate-100 p-1 rounded-lg mb-6">
+            <div className="type-switcher">
               <button 
                 type="button"
-                className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${type === 'match' ? 'bg-white shadow-sm text-primary-color' : 'text-slate-500'}`}
+                className={`type-switcher-btn ${type === 'match' ? 'active' : 'inactive'}`}
                 onClick={() => setType('match')}
               >
                 試合
               </button>
               <button 
                 type="button"
-                className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${type === 'practice' ? 'bg-white shadow-sm text-primary-color' : 'text-slate-500'}`}
+                className={`type-switcher-btn ${type === 'practice' ? 'active' : 'inactive'}`}
                 onClick={() => setType('practice')}
               >
                 練習

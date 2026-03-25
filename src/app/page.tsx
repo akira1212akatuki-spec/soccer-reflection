@@ -186,11 +186,31 @@ export default function Home() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-            {/* Left Column: Review List (Collapsible) */}
-            <div className="order-2 md:order-1">
+          <div className="flex flex-col gap-8 max-w-[800px] mx-auto">
+            {/* 1. Calendar */}
+            <div className="glass-panel">
+              <MatchCalendar matches={matches} userName={currentUser.name} />
+            </div>
+            
+            {/* 2. Average Performance */}
+            <div className="glass-panel">
+              <h2 className="form-label mb-4" style={{fontSize: '1rem', color: 'var(--text-main)'}}>期間ごとの平均パフォーマンス</h2>
+              <div className="flex gap-2 items-center mb-4">
+                <input type="date" className="form-input" style={{flex: 1, padding: '8px', fontSize: '0.875rem'}} value={startDate} onChange={e => setStartDate(e.target.value)} />
+                <span>〜</span>
+                <input type="date" className="form-input" style={{flex: 1, padding: '8px', fontSize: '0.875rem'}} value={endDate} onChange={e => setEndDate(e.target.value)} />
+              </div>
+              {avgEvaluation ? (
+                <RadarChart currentEvaluation={avgEvaluation} averageEvaluation={avgEvaluation} />
+              ) : (
+                <div className="text-center text-muted" style={{padding: '40px 0'}}>この期間のデータはありません</div>
+              )}
+            </div>
+
+            {/* 3. Review List (Collapsible & Grouped) */}
+            <div>
               <div 
-                className="flex items-center justify-between mb-4 cursor-pointer"
+                className="flex items-center justify-between mb-2 cursor-pointer"
                 onClick={() => setIsHistoryOpen(!isHistoryOpen)}
               >
                 <h2 className="form-label mb-0" style={{fontSize: '1.25rem', color: 'var(--text-main)', fontWeight: 700}}>振り返り一覧</h2>
@@ -200,38 +220,49 @@ export default function Home() {
               </div>
               
               {isHistoryOpen && (
-                <div className="matches-list">
-                  {matches.map(m => (
-                    <MatchCard key={m.id} match={m} userName={currentUser.name} onDelete={(id) => {
-                      import('@/lib/storage').then(mod => {
-                        mod.deleteStorageMatch(id);
-                        setMatches((prev: Match[]) => prev.filter(match => match.id !== id));
-                      });
-                    }} />
+                <div className="matches-list flex flex-col">
+                  {Object.entries(
+                    matches.reduce((acc: Record<string, Match[]>, m) => {
+                      const d = new Date(m.date);
+                      const key = `${d.getFullYear()}年${d.getMonth() + 1}月`;
+                      if (!acc[key]) acc[key] = [];
+                      acc[key].push(m);
+                      return acc;
+                    }, {})
+                  )
+                  .sort((a, b) => {
+                    // Sort YYYY年MM月 string descending
+                    const parseDate = (s: string) => {
+                      const [y, m] = s.replace('年', '-').replace('月', '').split('-');
+                      return new Date(parseInt(y), parseInt(m) - 1).getTime();
+                    };
+                    return parseDate(b[0]) - parseDate(a[0]);
+                  })
+                  .map(([month, monthMatches]) => (
+                    <div key={month} className="mb-4">
+                      <div className="month-group-header">
+                        <span>{month}</span>
+                        <span style={{fontSize: '0.75rem', fontWeight: 'normal'}}>({monthMatches.length}件)</span>
+                      </div>
+                      <div className="flex flex-col gap-3">
+                        {monthMatches.map(m => (
+                          <MatchCard 
+                            key={m.id} 
+                            match={m} 
+                            userName={currentUser.name} 
+                            onDelete={(id) => {
+                              import('@/lib/storage').then(mod => {
+                                mod.deleteStorageMatch(id);
+                                setMatches((prev: Match[]) => prev.filter(match => match.id !== id));
+                              });
+                            }} 
+                          />
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
-            </div>
-
-            {/* Right Column: Calendar & Average Chart */}
-            <div className="order-1 md:order-2 flex flex-col gap-6">
-              <div className="glass-panel">
-                <MatchCalendar matches={matches} userName={currentUser.name} />
-              </div>
-              
-              <div className="glass-panel">
-                <h2 className="form-label mb-4" style={{fontSize: '1rem', color: 'var(--text-main)'}}>期間ごとの平均パフォーマンス</h2>
-                <div className="flex gap-2 items-center mb-4">
-                  <input type="date" className="form-input" style={{flex: 1, padding: '8px', fontSize: '0.875rem'}} value={startDate} onChange={e => setStartDate(e.target.value)} />
-                  <span>〜</span>
-                  <input type="date" className="form-input" style={{flex: 1, padding: '8px', fontSize: '0.875rem'}} value={endDate} onChange={e => setEndDate(e.target.value)} />
-                </div>
-                {avgEvaluation ? (
-                  <RadarChart currentEvaluation={avgEvaluation} averageEvaluation={avgEvaluation} />
-                ) : (
-                  <div className="text-center text-muted" style={{padding: '40px 0'}}>この期間のデータはありません</div>
-                )}
-              </div>
             </div>
           </div>
         )}

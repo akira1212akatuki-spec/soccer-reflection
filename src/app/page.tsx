@@ -1,66 +1,253 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { v4 as uuidv4 } from 'uuid';
+import { Trophy, Plus, LogOut, User as UserIcon, Trash2, Edit, ChevronDown, ChevronUp } from 'lucide-react';
+import { User, getStorageUsers, saveStorageUser, getStorageMatches, Match, deleteStorageUser } from '@/lib/storage';
+import MatchCard from '@/components/MatchCard';
+import MatchCalendar from '@/components/Calendar';
+import RadarChart from '@/components/RadarChart';
+import { Evaluation } from '@/lib/storage';
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+  const router = useRouter();
+  
+  const [isClient, setIsClient] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  
+  // Login states
+  const [users, setUsers] = useState<User[]>([]);
+  const [newUserName, setNewUserName] = useState('');
+  
+  // Match states
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(true);
+
+  // Date filter for average chart
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1); // default 1 month ago
+    return d.toISOString().slice(0, 10);
+  });
+  const [endDate, setEndDate] = useState(() => {
+    return new Date().toISOString().slice(0, 10);
+  });
+
+  useEffect(() => {
+    setIsClient(true);
+    const storedUsers = getStorageUsers();
+    setUsers(storedUsers);
+    
+    // Check if user was previously selected in this session (easiest via simple localstate or just asking to pick)
+    const activeUserId = localStorage.getItem('active_user_id');
+    if (activeUserId) {
+      const u = storedUsers.find(u => u.id === activeUserId);
+      if (u) {
+        handleLogin(u);
+      }
+    }
+  }, []);
+
+  const handleCreateUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUserName.trim()) return;
+    
+    const newUser: User = {
+      id: uuidv4(),
+      name: newUserName.trim()
+    };
+    saveStorageUser(newUser);
+    setUsers([...users, newUser]);
+    setNewUserName('');
+    handleLogin(newUser);
+  };
+
+  const handleLogin = (u: User) => {
+    setCurrentUser(u);
+    localStorage.setItem('active_user_id', u.id);
+    const m = getStorageMatches(u.id);
+    setMatches(m);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('active_user_id');
+    setMatches([]);
+  };
+
+  // Compute filtered average
+  let avgEvaluation: Evaluation | null = null;
+  const filteredMatchesForAverage = matches.filter(m => {
+    const d = new Date(m.date).getTime();
+    const startObj = new Date(startDate);
+    startObj.setHours(0, 0, 0, 0);
+    const endObj = new Date(endDate);
+    endObj.setHours(23, 59, 59, 999);
+    return d >= startObj.getTime() && d <= endObj.getTime();
+  });
+
+  if (filteredMatchesForAverage.length > 0) {
+    const sum = { challenge: 0, transition: 0, intelligence: 0, hardwork: 0, mental: 0, captaincy: 0 };
+    filteredMatchesForAverage.forEach(m => {
+      sum.challenge += m.evaluation.challenge;
+      sum.transition += m.evaluation.transition;
+      sum.intelligence += m.evaluation.intelligence;
+      sum.hardwork += m.evaluation.hardwork;
+      sum.mental += m.evaluation.mental;
+      sum.captaincy += m.evaluation.captaincy;
+    });
+    const c = filteredMatchesForAverage.length;
+    avgEvaluation = {
+      challenge: sum.challenge / c, transition: sum.transition / c,
+      intelligence: sum.intelligence / c, hardwork: sum.hardwork / c,
+      mental: sum.mental / c, captaincy: sum.captaincy / c,
+    };
+  }
+
+  if (!isClient) return null;
+
+  if (!currentUser) {
+    return (
+      <div className="user-selector">
+        <div className="logo-container">
+          <Trophy size={40} color="white" />
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div className="text-center mb-6">
+          <h1 className="page-title" style={{ fontSize: '2rem' }}>Soccer Reflex</h1>
+          <p className="form-label mt-4">試合記録をつける選手を選んでください</p>
+        </div>
+
+        <div className="glass-panel" style={{ width: '100%', maxWidth: '350px' }}>
+          {users.length > 0 && (
+            <div className="mb-6">
+              <p className="form-label mb-4">登録済み選手</p>
+              <div className="flex" style={{ flexDirection: 'column', gap: '8px' }}>
+                {users.map(u => (
+                  <div key={u.id} className="flex gap-2 w-full">
+                    <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'flex-start' }} onClick={() => handleLogin(u)}>
+                      <UserIcon size={18} />
+                      {u.name}
+                    </button>
+                    <button className="btn-icon" onClick={() => {
+                      if (window.confirm(`選手「${u.name}」とその記録をすべて削除しますか？`)) {
+                        deleteStorageUser(u.id);
+                        setUsers(prev => prev.filter(user => user.id !== u.id));
+                        if (currentUser?.id === u.id) handleLogout();
+                      }
+                    }}>
+                      <Trash2 size={18} className="icon-accent" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+            <p className="form-label mb-4">新しい選手を登録</p>
+            <form onSubmit={handleCreateUser} className="flex gap-2">
+              <input
+                type="text"
+                className="form-input flex-1"
+                placeholder="選手名"
+                value={newUserName}
+                onChange={e => setNewUserName(e.target.value)}
+              />
+              <button type="submit" className="btn btn-primary" style={{ width: 'auto', padding: '12px 20px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                登録
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <header className="page-header">
+        <h1 className="page-title">振り返り</h1>
+        <div className="flex items-center gap-4">
+          <span className="form-label" style={{ fontSize: '0.875rem' }}>{currentUser.name}</span>
+          <button className="btn-icon" onClick={handleLogout} aria-label="ログアウト">
+            <LogOut size={18} />
+          </button>
+        </div>
+      </header>
+      
+      <main className="main-content" style={{ paddingBottom: '100px' }}>
+        {matches.length === 0 ? (
+          <div className="glass-panel empty-state">
+            <Trophy size={48} className="icon-subtle" />
+            <div>
+              <h3>まだ振り返り記録がありません</h3>
+              <p className="form-label mt-4">右下のボタンから最初の一歩を記録しましょう！</p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            {/* Left Column: Review List (Collapsible) */}
+            <div className="order-2 md:order-1">
+              <div 
+                className="flex items-center justify-between mb-4 cursor-pointer"
+                onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+              >
+                <h2 className="form-label mb-0" style={{fontSize: '1.25rem', color: 'var(--text-main)', fontWeight: 700}}>振り返り一覧</h2>
+                <button className="btn-icon">
+                  {isHistoryOpen ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
+                </button>
+              </div>
+              
+              {isHistoryOpen && (
+                <div className="matches-list">
+                  {matches.map(m => (
+                    <MatchCard key={m.id} match={m} userName={currentUser.name} onDelete={(id) => {
+                      import('@/lib/storage').then(mod => {
+                        mod.deleteStorageMatch(id);
+                        setMatches((prev: Match[]) => prev.filter(match => match.id !== id));
+                      });
+                    }} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Right Column: Calendar & Average Chart */}
+            <div className="order-1 md:order-2 flex flex-col gap-6">
+              <div className="glass-panel">
+                <MatchCalendar matches={matches} userName={currentUser.name} />
+              </div>
+              
+              <div className="glass-panel">
+                <h2 className="form-label mb-4" style={{fontSize: '1rem', color: 'var(--text-main)'}}>期間ごとの平均パフォーマンス</h2>
+                <div className="flex gap-2 items-center mb-4">
+                  <input type="date" className="form-input" style={{flex: 1, padding: '8px', fontSize: '0.875rem'}} value={startDate} onChange={e => setStartDate(e.target.value)} />
+                  <span>〜</span>
+                  <input type="date" className="form-input" style={{flex: 1, padding: '8px', fontSize: '0.875rem'}} value={endDate} onChange={e => setEndDate(e.target.value)} />
+                </div>
+                {avgEvaluation ? (
+                  <RadarChart currentEvaluation={avgEvaluation} averageEvaluation={avgEvaluation} />
+                ) : (
+                  <div className="text-center text-muted" style={{padding: '40px 0'}}>この期間のデータはありません</div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 100 }}>
+          <Link href="/match/new" className="btn btn-primary" style={{
+            height: '56px', borderRadius: '28px', padding: '0 20px',
+            boxShadow: '0 10px 25px rgba(59, 130, 246, 0.4)',
+            display: 'flex', alignItems: 'center', gap: '6px'
+          }}>
+            <Plus size={24} />
+            <span style={{ fontWeight: 600, fontSize: '1rem' }}>新規入力</span>
+          </Link>
         </div>
       </main>
-    </div>
+    </>
   );
 }

@@ -24,59 +24,58 @@ export default function MatchCard({ match, userName, onDelete }: MatchCardProps)
 
   return (
     <div 
-      className="match-card relative block group cursor-pointer" 
+      className="match-card-row block group cursor-pointer" 
       onClick={() => router.push(`/match/${match.id}?user=${encodeURIComponent(userName)}`)}
+      style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '12px', 
+        padding: '12px', 
+        borderBottom: '1px solid rgba(0,0,0,0.05)',
+        backgroundColor: 'white',
+        borderRadius: '8px',
+        marginBottom: '4px'
+      }}
     >
-      <div className="match-card-header">
-        <div className="match-card-opponent" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Swords size={18} className="icon-subtle flex-shrink-0" />
-          <span className="opponent-name truncate max-w-[150px]">
-            {match.type === 'practice' ? (match.practiceName || '練習') : match.opponent}
-          </span>
-          {getStatusLabel()}
-        </div>
-        {match.type !== 'practice' && (
-          <div className="match-card-score whitespace-nowrap">{match.myScore} - {match.opponentScore}</div>
-        )}
+      <div style={{ flex: '1', minWidth: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span style={{ fontWeight: 700, fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {match.type === 'practice' ? (match.practiceName || '練習') : match.opponent}
+        </span>
+        {getStatusLabel()}
       </div>
-      
-      <div className="match-card-body">
-        <p className="match-comment" style={{marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
-          <strong style={{fontSize: '0.75rem', color: 'var(--text-main)'}}>良かった点: </strong>
-          {match.goodPoints || 'なし'}
-        </p>
-      </div>
-      
-      <div className="match-card-footer flex justify-between items-center w-full">
-        <div className="match-date flex items-center gap-1">
-          <Calendar size={14} className="icon-subtle" />
-          <span>{formattedDate}</span>
+
+      {match.type !== 'practice' && (
+        <div style={{ fontWeight: 700, fontSize: '0.95rem', minWidth: '45px', textAlign: 'center' }}>
+          {match.myScore}-{match.opponentScore}
         </div>
-        
-        <div 
-          className="flex items-center gap-2 relative z-10" 
-          onClick={e => { e.preventDefault(); e.stopPropagation(); }}
+      )}
+
+      <div style={{ fontSize: '0.75rem', color: '#64748b', whiteSpace: 'nowrap' }}>
+        {format(new Date(match.date), 'MM/dd')}
+      </div>
+
+      <div 
+        className="flex items-center gap-1" 
+        onClick={e => { e.preventDefault(); e.stopPropagation(); }}
+      >
+        <button 
+          className="p-1.5 rounded-full hover:bg-slate-100 transition-colors" 
+          onClick={() => router.push(`/match/edit/${match.id}`)}
         >
+          <Edit size={16} className="text-slate-400" />
+        </button>
+        {onDelete && (
           <button 
-            className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" 
-            onClick={() => router.push(`/match/edit/${match.id}`)}
+            className="p-1.5 rounded-full hover:bg-red-50 transition-colors" 
+            onClick={() => {
+              if (window.confirm('この記録を一覧から削除しますか？')) {
+                onDelete(match.id);
+              }
+            }}
           >
-            <Edit size={16} className="text-slate-500" />
+            <Trash2 size={16} className="text-red-300" />
           </button>
-          {onDelete && (
-            <button 
-              className="p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" 
-              onClick={() => {
-                if (window.confirm('この記録を一覧から削除しますか？')) {
-                  onDelete(match.id);
-                }
-              }}
-            >
-              <Trash2 size={16} className="text-red-500" />
-            </button>
-          )}
-          <ChevronRight size={18} className="icon-accent" style={{ marginLeft: '4px' }} />
-        </div>
+        )}
       </div>
     </div>
   );

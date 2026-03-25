@@ -26,7 +26,7 @@ export default function MatchCalendar({ matches, userName }: CalendarProps) {
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
   return (
-    <div className="glass-panel" style={{ padding: '16px', marginBottom: '24px' }}>
+    <div style={{ width: '100%', marginBottom: '24px' }}>
       <div className="flex justify-between items-center mb-4">
         <button onClick={prevMonth} className="btn-icon" style={{ width: 32, height: 32 }}><ChevronLeft size={16} /></button>
         <span style={{ fontWeight: 600 }}>{format(currentDate, dateFormat)}</span>

@@ -75,7 +75,7 @@ function MatchDetailContent() {
         <button className="btn-icon" onClick={() => router.push('/')}>
           <ChevronLeft size={20} />
         </button>
-        <h1 className="page-title">振り返り</h1>
+        <h1 className="page-title">振り返り詳細</h1>
         <div className="flex gap-2">
           <button className="btn-icon" onClick={() => router.push(`/match/edit/${match.id}`)}>
             <Edit size={20} className="icon-subtle" />
@@ -92,40 +92,39 @@ function MatchDetailContent() {
       </header>
 
       <main className="main-content">
-        {/* 試合情報セクション (上に移動) */}
         <div className="glass-panel">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="form-label" style={{ margin: 0, color: 'var(--text-main)', fontSize: '1rem' }}>試合詳細</h2>
-            <div className="flex items-center gap-3">
-              <span style={{ 
-                fontSize: '0.875rem', fontWeight: 700, color: resultColor, 
-                backgroundColor: resultBg, padding: '4px 12px', borderRadius: '12px' 
-              }}>
-                <div className="flex flex-col items-center">
-                  <div className={statusClass} style={{ marginBottom: '8px' }}>{status}</div>
-                  {match.type !== 'practice' && (
-                    <div className="flex items-center gap-4">
-                      <div className="text-3xl font-bold">{match.myScore}</div>
-                      <div className="text-xl text-muted">-</div>
-                      <div className="text-3xl font-bold">{match.opponentScore}</div>
-                    </div>
-                  )}
-                  <div className="mt-2 text-sm text-muted">
-                    {match.type === 'practice' ? (match.practiceName || '練習メニュー') : `vs ${match.opponent}`}
-                  </div>
+          <div className="flex flex-col gap-2 mb-6">
+            <h2 className="form-label" style={{ margin: 0, color: 'var(--text-main)', fontSize: '1.25rem', fontWeight: 800 }}>振り返り詳細</h2>
+            
+            <div style={{ 
+              marginTop: '8px',
+              padding: '16px', 
+              borderRadius: '12px',
+              backgroundColor: resultBg,
+              border: `1px solid ${resultColor}22`
+            }}>
+              <div className="flex flex-col">
+                <div style={{ color: resultColor, fontWeight: 800, fontSize: '0.875rem', marginBottom: '4px' }}>
+                  {status}
                 </div>
-              </span>
+                {match.type !== 'practice' ? (
+                  <div className="flex items-center gap-4">
+                    <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--text-main)' }}>
+                      {match.myScore} - {match.opponentScore}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                    {match.practiceName || '練習メニュー'}
+                  </div>
+                )}
+                {match.type !== 'practice' && (
+                  <div className="mt-1 text-sm font-bold" style={{ color: 'var(--text-muted)' }}>
+                    対戦相手: {match.opponent}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-          
-          <div className="flex gap-2 items-center mb-3">
-            <Swords size={18} className="icon-accent" />
-            <span style={{ fontSize: '1.125rem', fontWeight: 600 }}>{match.opponent}</span>
-          </div>
-
-          <div className="flex gap-2 items-center mb-6">
-            <Calendar size={16} className="icon-subtle" />
-            <span className="text-muted" style={{ fontSize: '0.875rem' }}>{formattedDate}</span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

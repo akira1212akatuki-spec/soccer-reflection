@@ -186,9 +186,9 @@ export default function Home() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-8 max-w-[800px] mx-auto">
-            {/* 1. Calendar */}
-            <div className="glass-panel">
+          <div className="flex flex-col gap-8 max-w-[800px] mx-auto" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+            {/* 1. Calendar (No background, full width) */}
+            <div style={{ width: '100%' }}>
               <MatchCalendar matches={matches} userName={currentUser.name} />
             </div>
             

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Soccer Reflection',
+  title: 'SoccerReflex',
   description: '試合振り返りと自己評価を記録し、成長を可視化するアプリ',
 };
 

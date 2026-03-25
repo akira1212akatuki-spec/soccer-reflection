@@ -26,10 +26,39 @@ export default function MatchCalendar({ matches, userName }: CalendarProps) {
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
   return (
-    <div style={{ width: '100%', marginBottom: '24px' }}>
+    <div className="glass-panel" style={{ padding: '16px', marginBottom: '24px' }}>
       <div className="flex justify-between items-center mb-4">
         <button onClick={prevMonth} className="btn-icon" style={{ width: 32, height: 32 }}><ChevronLeft size={16} /></button>
-        <span style={{ fontWeight: 600 }}>{format(currentDate, dateFormat)}</span>
+        <div className="flex gap-1">
+          <select 
+            value={currentDate.getFullYear()} 
+            onChange={(e) => {
+              const newDate = new Date(currentDate);
+              newDate.setFullYear(parseInt(e.target.value));
+              setCurrentDate(newDate);
+            }}
+            className="form-input"
+            style={{ padding: '2px 8px', fontSize: '0.9rem', width: 'auto', border: 'none', background: 'transparent', fontWeight: 700 }}
+          >
+            {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map(y => (
+              <option key={y} value={y}>{y}年</option>
+            ))}
+          </select>
+          <select 
+            value={currentDate.getMonth()} 
+            onChange={(e) => {
+              const newDate = new Date(currentDate);
+              newDate.setMonth(parseInt(e.target.value));
+              setCurrentDate(newDate);
+            }}
+            className="form-input"
+            style={{ padding: '2px 8px', fontSize: '0.9rem', width: 'auto', border: 'none', background: 'transparent', fontWeight: 700 }}
+          >
+            {Array.from({ length: 12 }, (_, i) => i).map(m => (
+              <option key={m} value={m}>{m + 1}月</option>
+            ))}
+          </select>
+        </div>
         <button onClick={nextMonth} className="btn-icon" style={{ width: 32, height: 32 }}><ChevronRight size={16} /></button>
       </div>
 

@@ -39,6 +39,7 @@ body {
   color: var(--text-main);
   min-height: 100vh;
   line-height: 1.5;
+  font-size: 1.05rem; /* Slightly larger */
   -webkit-font-smoothing: antialiased;
 }
 
@@ -164,7 +165,7 @@ a {
 }
 
 .form-label {
-  font-size: 0.875rem;
+  font-size: 0.9375rem; /* Larger */
   font-weight: 500;
   color: var(--text-muted);
 }

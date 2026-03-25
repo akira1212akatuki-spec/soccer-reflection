@@ -166,12 +166,21 @@ export default function Home() {
 
   return (
     <>
-      <header className="page-header">
-        <h1 className="page-title">振り返り</h1>
-        <div className="flex items-center gap-4">
-          <span className="form-label" style={{ fontSize: '0.875rem' }}>{currentUser.name}</span>
-          <button className="btn-icon" onClick={handleLogout} aria-label="ログアウト">
-            <LogOut size={18} />
+      <header className="page-header flex flex-col items-center gap-2" style={{ padding: '24px 16px' }}>
+        <h1 className="page-title" style={{ fontSize: '1.75rem', fontWeight: 900, letterSpacing: '-0.025em' }}>SoccerReflex</h1>
+        <div className="flex items-center gap-4 mt-2">
+          <span className="form-label" style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)' }}>{currentUser.name}</span>
+          <button 
+            className="btn-icon" 
+            onClick={handleLogout} 
+            aria-label="ログアウト"
+            style={{ 
+              border: '2px solid rgba(0,0,0,0.2)', 
+              borderRadius: '8px',
+              padding: '6px'
+            }}
+          >
+            <LogOut size={20} />
           </button>
         </div>
       </header>
@@ -220,7 +229,7 @@ export default function Home() {
               </div>
               
               {isHistoryOpen && (
-                <div className="matches-list flex flex-col">
+                <div className="matches-list flex flex-col gap-4 w-full" style={{ display: 'flex', flexDirection: 'column' }}>
                   {Object.entries(
                     matches.reduce((acc: Record<string, Match[]>, m) => {
                       const d = new Date(m.date);
@@ -245,7 +254,9 @@ export default function Home() {
                         <span style={{fontSize: '0.75rem', fontWeight: 'normal'}}>({monthMatches.length}件)</span>
                       </div>
                       <div className="flex flex-col gap-3">
-                        {monthMatches.map(m => (
+                        {monthMatches
+                          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                          .map(m => (
                           <MatchCard 
                             key={m.id} 
                             match={m} 

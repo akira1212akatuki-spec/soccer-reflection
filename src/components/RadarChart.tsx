@@ -118,16 +118,7 @@ export default function RadarChart({ currentEvaluation, averageEvaluation }: Rad
     },
     plugins: {
       legend: {
-        position: 'top',
-        labels: {
-          color: '#334155',
-          font: {
-            size: 12,
-            family: "'Inter', sans-serif",
-          },
-          usePointStyle: true,
-          padding: 20
-        }
+        display: false,
       },
       tooltip: {
         backgroundColor: 'rgba(255, 255, 255, 0.9)',

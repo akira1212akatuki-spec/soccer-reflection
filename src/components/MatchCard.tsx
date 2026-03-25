@@ -30,27 +30,28 @@ export default function MatchCard({ match, userName, onDelete }: MatchCardProps)
         display: 'flex', 
         alignItems: 'center', 
         gap: '12px', 
-        padding: '12px', 
+        padding: '12px 16px', 
         borderBottom: '1px solid rgba(0,0,0,0.05)',
         backgroundColor: 'white',
         borderRadius: '8px',
-        marginBottom: '4px'
+        marginBottom: '6px',
+        width: '100%'
       }}
     >
       <div style={{ flex: '1', minWidth: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span style={{ fontWeight: 700, fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <span style={{ fontWeight: 700, fontSize: '1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {match.type === 'practice' ? (match.practiceName || '練習') : match.opponent}
         </span>
         {getStatusLabel()}
       </div>
 
       {match.type !== 'practice' && (
-        <div style={{ fontWeight: 700, fontSize: '0.95rem', minWidth: '45px', textAlign: 'center' }}>
+        <div style={{ fontWeight: 700, fontSize: '1rem', minWidth: '50px', textAlign: 'center' }}>
           {match.myScore}-{match.opponentScore}
         </div>
       )}
 
-      <div style={{ fontSize: '0.75rem', color: '#64748b', whiteSpace: 'nowrap' }}>
+      <div style={{ fontSize: '0.85rem', color: '#64748b', whiteSpace: 'nowrap' }}>
         {format(new Date(match.date), 'MM/dd')}
       </div>
 
@@ -62,7 +63,7 @@ export default function MatchCard({ match, userName, onDelete }: MatchCardProps)
           className="p-1.5 rounded-full hover:bg-slate-100 transition-colors" 
           onClick={() => router.push(`/match/edit/${match.id}`)}
         >
-          <Edit size={16} className="text-slate-400" />
+          <Edit size={18} className="text-slate-400" />
         </button>
         {onDelete && (
           <button 
@@ -73,7 +74,7 @@ export default function MatchCard({ match, userName, onDelete }: MatchCardProps)
               }
             }}
           >
-            <Trash2 size={16} className="text-red-300" />
+            <Trash2 size={18} className="text-red-300" />
           </button>
         )}
       </div>

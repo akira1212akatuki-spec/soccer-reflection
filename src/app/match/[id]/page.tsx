@@ -93,34 +93,33 @@ function MatchDetailContent() {
 
       <main className="main-content">
         <div className="glass-panel">
-          <div className="flex flex-col gap-2 mb-6">
-            <h2 className="form-label" style={{ margin: 0, color: 'var(--text-main)', fontSize: '1.25rem', fontWeight: 800 }}>振り返り詳細</h2>
-            
-            <div style={{ 
-              marginTop: '8px',
-              padding: '16px', 
-              borderRadius: '12px',
-              backgroundColor: resultBg,
-              border: `1px solid ${resultColor}22`
-            }}>
-              <div className="flex flex-col">
-                <div style={{ color: resultColor, fontWeight: 800, fontSize: '0.875rem', marginBottom: '4px' }}>
+          <div className="flex flex-col gap-4 mb-6">
+            <div className="text-muted" style={{ fontSize: '0.9rem', marginBottom: '4px' }}>
+              {formattedDate}
+            </div>
+
+            <div className="flex items-center justify-between gap-4">
+              <div style={{ flex: '1', minWidth: 0 }}>
+                <span style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--text-main)', display: 'block' }}>
+                  {match.type === 'practice' ? (match.practiceName || '練習メニュー') : match.opponent}
+                </span>
+              </div>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ 
+                  color: resultColor, 
+                  fontWeight: 800, 
+                  fontSize: '0.9rem',
+                  backgroundColor: resultBg,
+                  padding: '4px 10px',
+                  borderRadius: '6px'
+                }}>
                   {status}
                 </div>
-                {match.type !== 'practice' ? (
-                  <div className="flex items-center gap-4">
-                    <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--text-main)' }}>
-                      {match.myScore} - {match.opponentScore}
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                    {match.practiceName || '練習メニュー'}
-                  </div>
-                )}
+                
                 {match.type !== 'practice' && (
-                  <div className="mt-1 text-sm font-bold" style={{ color: 'var(--text-muted)' }}>
-                    対戦相手: {match.opponent}
+                  <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--text-main)' }}>
+                    {match.myScore} - {match.opponentScore}
                   </div>
                 )}
               </div>

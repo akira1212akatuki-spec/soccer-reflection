@@ -27,9 +27,10 @@ ChartJS.register(
 interface RadarChartProps {
   currentEvaluation: Evaluation;
   averageEvaluation: Evaluation;
+  showLegend?: boolean;
 }
 
-export default function RadarChart({ currentEvaluation, averageEvaluation }: RadarChartProps) {
+export default function RadarChart({ currentEvaluation, averageEvaluation, showLegend = false }: RadarChartProps) {
   const labels = [
     'チャレンジ',
     'トランジション',
@@ -61,7 +62,7 @@ export default function RadarChart({ currentEvaluation, averageEvaluation }: Rad
     labels,
     datasets: [
       {
-        label: '今回の試合',
+        label: '今回の分析',
         data: currentData,
         fill: true,
         backgroundColor: 'rgba(59, 130, 246, 0.4)', // primary blue, semi-transparent
@@ -118,7 +119,18 @@ export default function RadarChart({ currentEvaluation, averageEvaluation }: Rad
     },
     plugins: {
       legend: {
-        display: false,
+        display: showLegend,
+        position: 'bottom',
+        labels: {
+          color: '#334155',
+          font: {
+            size: 12,
+            family: "'Inter', sans-serif",
+            weight: 'bold'
+          },
+          usePointStyle: true,
+          padding: 20
+        }
       },
       tooltip: {
         backgroundColor: 'rgba(255, 255, 255, 0.9)',

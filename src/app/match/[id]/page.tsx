@@ -156,6 +156,7 @@ function MatchDetailContent() {
           <RadarChart 
             currentEvaluation={match.evaluation} 
             averageEvaluation={chartAverage} 
+            showLegend={true}
           />
         </div>
       </main>

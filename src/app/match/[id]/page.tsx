@@ -20,6 +20,50 @@ function MatchDetailContent() {
   
   const [match, setMatch] = useState<Match | null>(null);
   const [average, setAverage] = useState<Evaluation | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiAdvice, setAiAdvice] = useState<string | null>(null);
+  const [aiKeyword, setAiKeyword] = useState<string | null>(null);
+  const [errorHeader, setErrorHeader] = useState<string | null>(null);
+
+  // 検索用キーワードマッピング (ID管理から、より確実な検索ワード管理へ移行)
+  const youtubeSearchKeywords: Record<string, string> = {
+    'シュート': 'シュート練習 決定力向上',
+    'ドリブル': 'ドリブル 抜き技 基礎',
+    '1vs1守備': 'サッカー 守備 1vs1 コツ',
+    'トラップ': 'サッカー トラップ 基礎',
+    'ポジショニング': 'サッカー ポジショニング 動き直し',
+    '体力・スタミナ': 'サッカー スタミナ トレーニング',
+    'ヘディング': 'サッカー ヘディング 競り合い',
+    'パス': 'サッカー パス 精度 向上',
+    'ディフェンス': 'サッカー 守備 基礎',
+    '1vs1': 'サッカー 1vs1 攻撃 守備'
+  };
+
+  const handleAnalyze = async () => {
+    if (!match) return;
+    setIsAnalyzing(true);
+    setErrorHeader(null);
+    try {
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ matchData: match })
+      });
+      const data = await response.json();
+      if (data.error) {
+        setErrorHeader(data.error);
+      } else {
+        setAiAdvice(data.advice);
+        setAiKeyword(data.keyword);
+        // 保存はブラウザのセッションに留めるか、必要ならlocalStorageへ
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorHeader('AI分析中にエラーが発生しました。');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   useEffect(() => {
     if (matchId) {
@@ -168,15 +212,137 @@ function MatchDetailContent() {
           />
         </div>
 
-        {/* AIからの振り返り・考察セクション (プレースホルダー) */}
-        <div className="glass-panel" style={{ padding: '20px', background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', border: '1px solid #bbf7d0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <span style={{ fontSize: '1.25rem' }}>🤖</span>
-            <h2 style={{ fontSize: '1rem', color: '#166534', fontWeight: 800, margin: 0 }}>AIからの振り返り・考察</h2>
+        {/* AIからの振り返り・考察セクション */}
+        <div className="glass-panel" style={{ 
+          padding: '24px', 
+          background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', 
+          border: '1px solid #bbf7d0',
+          boxShadow: '0 10px 25px -5px rgba(22, 101, 52, 0.1)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '1.5rem' }}>🤖</span>
+              <h2 style={{ fontSize: '1.1rem', color: '#166534', fontWeight: 800, margin: 0 }}>AIプロコーチの分析</h2>
+            </div>
+            {!aiAdvice && !isAnalyzing && (
+              <button 
+                className="btn-primary" 
+                onClick={handleAnalyze}
+                style={{ width: 'auto', padding: '8px 16px', fontSize: '0.85rem' }}
+              >
+                分析を依頼する
+              </button>
+            )}
           </div>
-          <p style={{ fontSize: '0.9rem', lineHeight: 1.6, color: '#166534', opacity: 0.9 }}>
-            （AI連携機能を追加すると、ここに自動分析によるフィードバックが表示されます。現在は枠組みのみの準備となります。）
-          </p>
+
+          {isAnalyzing ? (
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <div className="text-muted" style={{ fontSize: '0.9rem', marginBottom: '8px' }}>コーチが試合内容を分析中...</div>
+              <div style={{ width: '30px', height: '30px', border: '3px solid #bbf7d0', borderTopColor: '#166534', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto' }}></div>
+              <style jsx>{`
+                @keyframes spin { to { transform: rotate(360deg); } }
+              `}</style>
+            </div>
+          ) : aiAdvice ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ 
+                padding: '16px', 
+                background: 'white', 
+                borderRadius: '12px', 
+                border: '1px solid rgba(22, 101, 52, 0.1)',
+                fontSize: '0.95rem',
+                lineHeight: 1.7,
+                color: '#166534'
+              }}>
+                {aiAdvice}
+              </div>
+
+              {/* YouTube動画提案 */}
+              {aiKeyword && (
+                  <div style={{ marginTop: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '1.25rem' }}>📺</span>
+                      <h3 style={{ fontSize: '0.95rem', color: '#166534', fontWeight: 700, margin: 0 }}>
+                        おすすめの練習動画: <span style={{ textDecoration: 'underline' }}>{aiKeyword}</span>
+                      </h3>
+                    </div>
+                    
+                    <a 
+                      href={`https://www.youtube.com/results?search_query=サッカー+${encodeURIComponent(youtubeSearchKeywords[aiKeyword] || aiKeyword)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ 
+                        display: 'block', 
+                        textDecoration: 'none',
+                        position: 'relative', 
+                        width: '100%', 
+                        background: 'linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.7)), url("https://images.unsplash.com/photo-1574629810360-7efbbe195018?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80")',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        borderRadius: '16px', 
+                        overflow: 'hidden',
+                        aspectRatio: '16/9',
+                        boxShadow: '0 8px 30px rgba(0,0,0,0.2)',
+                        transition: 'transform 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                    >
+                      {/* 再生アイコンオーバーレイ */}
+                      <div style={{ 
+                        position: 'absolute', 
+                        top: 0, 
+                        left: 0, 
+                        right: 0, 
+                        bottom: 0, 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        color: 'white',
+                        padding: '20px',
+                        textAlign: 'center'
+                      }}>
+                        <div style={{ 
+                          width: '64px', 
+                          height: '64px', 
+                          background: 'rgba(255,0,0,0.9)', 
+                          borderRadius: '50%', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          marginBottom: '16px',
+                          boxShadow: '0 0 20px rgba(255,0,0,0.5)'
+                        }}>
+                          <div style={{ 
+                            width: 0, 
+                            height: 0, 
+                            borderStyle: 'solid', 
+                            borderWidth: '12px 0 12px 20px', 
+                            borderColor: 'transparent transparent transparent #ffffff',
+                            marginLeft: '4px'
+                          }}></div>
+                        </div>
+                        <span style={{ fontSize: '1rem', fontWeight: 800, letterSpacing: '0.05em', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+                          YouTubeで練習動画を探す
+                        </span>
+                        <div style={{ fontSize: '0.8rem', opacity: 0.9, marginTop: '8px' }}>
+                          「{aiKeyword}」に関する最新の動画を表示します
+                        </div>
+                      </div>
+                    </a>
+                  </div>
+              )}
+            </div>
+          ) : errorHeader ? (
+             <p style={{ fontSize: '0.9rem', color: '#991b1b', background: '#fee2e2', padding: '12px', borderRadius: '8px' }}>
+               {errorHeader}
+             </p>
+          ) : (
+            <p style={{ fontSize: '0.9rem', lineHeight: 1.6, color: '#166534', opacity: 0.9 }}>
+              「分析を依頼する」ボタンを押すと、Gemini AIがプロコーチの視点でアドバイスを生成し、おすすめの練習動画を提案します。
+            </p>
+          )}
         </div>
       </main>
     </>

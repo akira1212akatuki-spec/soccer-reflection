@@ -509,3 +509,8 @@ input[type=range]:focus {
   align-items: center;
   gap: 16px;
 }
+
+/* AI Loading Spinner */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

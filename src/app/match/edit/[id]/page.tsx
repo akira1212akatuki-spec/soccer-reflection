@@ -75,6 +75,8 @@ export default function EditMatch() {
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (!matchData) return;
+    if (type === 'match' && !opponent) return;
+    if (type === 'practice' && !practiceName) return;
     
     const updatedMatch: Match = {
       ...matchData,
@@ -109,17 +111,17 @@ export default function EditMatch() {
       <input
         type="range"
         min="1"
-        max="5"
+        max="7"
         step="1"
         className="evaluation-slider"
         style={{
-          background: `linear-gradient(to right, var(--primary-color) ${((evaluation[key] - 1) / 4) * 100}%, rgba(0,0,0,0.1) ${((evaluation[key] - 1) / 4) * 100}%)`
+          background: `linear-gradient(to right, var(--primary-color) ${((evaluation[key] - 1) / 6) * 100}%, rgba(0,0,0,0.1) ${((evaluation[key] - 1) / 6) * 100}%)`
         }}
         value={evaluation[key]}
         onChange={(e) => handleSliderChange(e, key)}
       />
-      <div className="slider-labels">
-        <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+      <div className="slider-labels" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+        <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span>
       </div>
     </div>
   );
@@ -252,7 +254,7 @@ export default function EditMatch() {
           </div>
 
           <div className="glass-panel mb-6">
-            <h2 className="form-label mb-4" style={{ fontSize: '1rem', color: 'var(--text-main)' }}>自己評価 (1〜5点)</h2>
+            <h2 className="form-label mb-4" style={{ fontSize: '1rem', color: 'var(--text-main)' }}>自己評価 (1〜7点)</h2>
             <div className="evaluation-list">
               {renderSlider('challenge', '1. チャレンジ', '失敗を恐れない姿勢、仕掛け')}
               {renderSlider('transition', '2. トランジション', '攻守の切り替えの早さ')}

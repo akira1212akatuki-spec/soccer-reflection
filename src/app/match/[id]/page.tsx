@@ -98,7 +98,7 @@ function MatchDetailContent() {
               {formattedDate}
             </div>
 
-            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--text-main)', marginBottom: '4px' }}>
+            <div style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--text-main)', marginBottom: '4px' }}>
               {match.type === 'practice' ? (match.practiceName || '練習メニュー') : match.opponent}
             </div>
             
@@ -158,6 +158,17 @@ function MatchDetailContent() {
             averageEvaluation={chartAverage} 
             showLegend={true}
           />
+        </div>
+
+        {/* AIからの振り返り・考察セクション (プレースホルダー) */}
+        <div className="glass-panel" style={{ padding: '20px', background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', border: '1px solid #bbf7d0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <span style={{ fontSize: '1.25rem' }}>🤖</span>
+            <h2 style={{ fontSize: '1rem', color: '#166534', fontWeight: 800, margin: 0 }}>AIからの振り返り・考察</h2>
+          </div>
+          <p style={{ fontSize: '0.9rem', lineHeight: 1.6, color: '#166534', opacity: 0.9 }}>
+            （AI連携機能を追加すると、ここに自動分析によるフィードバックが表示されます。現在は枠組みのみの準備となります。）
+          </p>
         </div>
       </main>
     </>

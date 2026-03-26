@@ -255,7 +255,7 @@ export default function Home() {
                       </div>
                       <div className="flex flex-col gap-3">
                         {monthMatches
-                          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                          .sort((a, b) => b.createdAt - a.createdAt)
                           .map(m => (
                           <MatchCard 
                             key={m.id} 

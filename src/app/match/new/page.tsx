@@ -51,7 +51,9 @@ function NewMatchForm() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userId || !opponent) return;
+    if (!userId) return;
+    if (type === 'match' && !opponent) return;
+    if (type === 'practice' && !practiceName) return;
 
     const newMatch = {
       id: uuidv4(),
@@ -87,14 +89,14 @@ function NewMatchForm() {
       <input
         type="range"
         min="1"
-        max="5"
+        max="7"
         step="1"
         value={evaluation[key]}
         onChange={(e) => handleSliderChange(key, parseInt(e.target.value))}
       />
       <div className="flex justify-between" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
         <span>1 (低)</span>
-        <span>5 (高)</span>
+        <span>7 (高)</span>
       </div>
     </div>
   );
@@ -105,7 +107,7 @@ function NewMatchForm() {
         <button className="btn-icon" onClick={() => router.push('/')}>
           <ChevronLeft size={20} />
         </button>
-        <h1 className="page-title">新規試合記録</h1>
+        <h1 className="page-title">新規入力</h1>
         <div style={{ width: 40 }} /> {/* Spacer */}
       </header>
 
@@ -227,7 +229,7 @@ function NewMatchForm() {
           </div>
 
           <div className="glass-panel mb-6">
-            <h2 className="form-label mb-4" style={{ fontSize: '1rem', color: 'var(--text-main)' }}>自己評価 (1〜5点)</h2>
+            <h2 className="form-label mb-4" style={{ fontSize: '1rem', color: 'var(--text-main)' }}>自己評価 (1〜7点)</h2>
             <div className="evaluation-list">
               {renderSlider('challenge', '1. チャレンジ', '失敗を恐れない姿勢、仕掛け')}
               {renderSlider('transition', '2. トランジション', '攻守の切り替えの早さ')}

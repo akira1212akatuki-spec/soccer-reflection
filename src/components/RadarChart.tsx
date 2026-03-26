@@ -65,13 +65,13 @@ export default function RadarChart({ currentEvaluation, averageEvaluation, showL
         label: '今回の分析',
         data: currentData,
         fill: true,
-        backgroundColor: 'rgba(59, 130, 246, 0.4)', // primary blue, semi-transparent
+        backgroundColor: 'rgba(59, 130, 246, 0.5)', // slightly darker
         borderColor: 'rgb(59, 130, 246)',
         pointBackgroundColor: 'rgb(59, 130, 246)',
         pointBorderColor: '#fff',
         pointHoverBackgroundColor: '#fff',
         pointHoverBorderColor: 'rgb(59, 130, 246)',
-        borderWidth: 2,
+        borderWidth: 3,
       },
       {
         label: '平均値',
@@ -84,7 +84,7 @@ export default function RadarChart({ currentEvaluation, averageEvaluation, showL
         pointBorderColor: '#fff',
         pointHoverBackgroundColor: '#fff',
         pointHoverBorderColor: 'rgb(239, 68, 68)',
-        borderWidth: 2,
+        borderWidth: 3,
       }
     ],
   };
@@ -95,7 +95,7 @@ export default function RadarChart({ currentEvaluation, averageEvaluation, showL
     scales: {
       r: {
         min: 0,
-        max: 5,
+        max: 7,
         ticks: {
           stepSize: 1,
           backdropColor: 'transparent',

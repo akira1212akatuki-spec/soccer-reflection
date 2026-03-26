@@ -160,12 +160,27 @@ function MatchDetailContent() {
 
             {/* 2段目: 対戦相手 */}
             <div style={{ 
-              fontSize: '1.6rem', 
-              fontWeight: 900, 
               color: 'var(--text-main)',
-              lineHeight: 1.2
+              lineHeight: 1.2,
+              display: 'flex',
+              alignItems: 'baseline',
+              gap: '12px',
+              flexWrap: 'wrap'
             }}>
-              {match.type === 'practice' ? (match.practiceName || '練習メニュー') : match.opponent}
+              {match.type === 'match' ? (
+                <>
+                  <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                    対戦チーム
+                  </span>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 900 }}>
+                    {match.opponent}
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize: '1.6rem', fontWeight: 900 }}>
+                  {match.practiceName || '練習メニュー'}
+                </div>
+              )}
             </div>
 
             {/* 3段目: 勝敗と点数 */}

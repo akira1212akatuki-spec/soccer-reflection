@@ -146,7 +146,7 @@ function NewMatchForm() {
             {type === 'match' ? (
               <>
                 <div className="form-group">
-                  <label className="form-label">対戦相手 *</label>
+                  <label className="form-label">対戦チーム *</label>
                   <input 
                     type="text" 
                     className="form-input" 

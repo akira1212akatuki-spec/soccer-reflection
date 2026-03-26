@@ -9,6 +9,7 @@ import {
   getStorageMatchById, 
   calculateAverageEvaluation,
   deleteStorageMatch,
+  getStorageMatches,
   saveStorageMatch,
   Evaluation 
 } from '@/lib/storage';
@@ -45,10 +46,13 @@ function MatchDetailContent() {
     setIsAnalyzing(true);
     setErrorHeader(null);
     try {
+      // 過去の履歴（今回の試合を除く）を取得して渡す
+      const history = getStorageMatches(match.userId).filter(m => m.id !== match.id);
+      
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchData: match })
+        body: JSON.stringify({ matchData: match, history })
       });
       const data = await response.json();
       if (data.error) {

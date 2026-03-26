@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { matchData } = body;
+    const { matchData, history } = body;
 
     const apiKey = process.env.GEMINI_API_KEY;
 
@@ -14,12 +14,17 @@ export async function POST(request: Request) {
       );
     }
 
+    // 過去の傾向を要約（直近5件程度）
+    const historySummary = history && history.length > 0
+      ? history.slice(0, 5).map((h: any) => `- ${h.date}: ${h.type === 'match' ? h.opponent : h.practiceName} (評価: ${JSON.stringify(h.evaluation)})`).join('\n')
+      : 'なし';
+
     // プロンプトの作成
     const prompt = `
-あなたはプロのサッカーコーチです。以下の試合・練習の振り返り内容を分析し、選手に向けて「温かくも的確なアドバイス」を150文字程度で送ってください。
-また、その内容に基づいて、YouTubeで検索すべき最も重要な練習キーワード（例：シュート、ドリブル、1vs1守備、ヘディング、トラップ、ポジショニングなど）を1つだけ選んでください。
+あなたは世界トップクラスのプロサッカーコーチです。
+提供された「今回の記録」を分析し、さらに「過去の振り返り履歴」と比較して、選手の成長や課題の傾向（癖や改善の兆しなど）をプロの視点で鋭く、かつ温かい言葉で分析してください。
 
-【データ】
+【今回の記録】
 種類: ${matchData.type === 'match' ? '試合' : '練習'}
 対象: ${matchData.opponent || matchData.practiceName}
 日付: ${matchData.date}
@@ -27,6 +32,15 @@ export async function POST(request: Request) {
 改善点: ${matchData.badPoints || 'なし'}
 感想: ${matchData.comment || 'なし'}
 自己評価: ${JSON.stringify(matchData.evaluation)}
+
+【過去の振り返り履歴（直近5件）】
+${historySummary}
+
+【分析・アドバイスの指示】
+1. なぜこの記事がプロのコーチからの言葉なのかを感じさせる「専門用語」や「プレーの本質」に触れてください。
+2. 過去の履歴と比較して、成長している点や、繰り返し起きている課題を指摘してください。
+3. 文字数は250文字程度。
+4. 内容に基づき、YouTubeで検索すべき最も重要な練習キーワード（例：シュート、ドリブル、1vs1守備、ヘディング、トラップ、ポジショニングなど）を1つだけ選んでください。
 
 【出力形式】
 以下のJSON形式のみで回答してください。余計な説明は不要です。

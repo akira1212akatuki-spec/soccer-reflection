@@ -77,6 +77,7 @@ a {
   font-weight: 700;
   background: var(--primary-gradient);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   margin: 0;
 }
@@ -424,6 +425,7 @@ a {
 /* Custom Range Slider */
 input[type=range] {
   -webkit-appearance: none;
+  appearance: none;
   width: 100%;
   background: transparent;
 }
@@ -470,6 +472,7 @@ input[type=range]:focus {
 .items-center { align-items: center; }
 .gap-2 { gap: 8px; }
 .gap-4 { gap: 16px; }
+.flex-col { flex-direction: column; }
 
 .icon-subtle { color: var(--text-muted); }
 .icon-accent { color: var(--primary-color); }

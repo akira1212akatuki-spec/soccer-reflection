@@ -93,7 +93,7 @@ function MatchDetailContent() {
 
       <main className="main-content">
         <div className="glass-panel">
-          <div className="flex flex-col gap-4 mb-6 pb-4" style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
             {/* 1段目: 日付 */}
             <div className="text-muted" style={{ fontSize: '0.9rem' }}>
               {formattedDate}

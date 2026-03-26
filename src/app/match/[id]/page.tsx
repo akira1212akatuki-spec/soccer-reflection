@@ -9,6 +9,7 @@ import {
   getStorageMatchById, 
   calculateAverageEvaluation,
   deleteStorageMatch,
+  saveStorageMatch,
   Evaluation 
 } from '@/lib/storage';
 import RadarChart from '@/components/RadarChart';
@@ -55,7 +56,15 @@ function MatchDetailContent() {
       } else {
         setAiAdvice(data.advice);
         setAiKeyword(data.keyword);
-        // 保存はブラウザのセッションに留めるか、必要ならlocalStorageへ
+        
+        // 分析結果を保存
+        const updatedMatch: Match = {
+          ...match,
+          aiAdvice: data.advice,
+          aiKeyword: data.keyword
+        };
+        saveStorageMatch(updatedMatch);
+        setMatch(updatedMatch);
       }
     } catch (err) {
       console.error(err);
@@ -70,7 +79,9 @@ function MatchDetailContent() {
       const storedMatch = getStorageMatchById(matchId);
       if (storedMatch) {
         setMatch(storedMatch);
-        // Active user logic is implied because match has userId
+        if (storedMatch.aiAdvice) setAiAdvice(storedMatch.aiAdvice);
+        if (storedMatch.aiKeyword) setAiKeyword(storedMatch.aiKeyword);
+        
         const avg = calculateAverageEvaluation(storedMatch.userId);
         setAverage(avg);
       } else {
@@ -344,6 +355,28 @@ function MatchDetailContent() {
             <p style={{ fontSize: '0.9rem', lineHeight: 1.6, color: '#166534', opacity: 0.9 }}>
               「分析を依頼する」ボタンを押すと、Gemini AIがプロコーチの視点でアドバイスを生成し、おすすめの練習動画を提案します。
             </p>
+          )}
+
+          {aiAdvice && !isAnalyzing && (
+            <div style={{ marginTop: '24px', borderTop: '1px solid rgba(22, 101, 52, 0.1)', paddingTop: '16px', textAlign: 'center' }}>
+              <button 
+                onClick={handleAnalyze}
+                disabled={isAnalyzing}
+                style={{ 
+                  background: 'transparent',
+                  border: '1px solid #166534',
+                  color: '#166534',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  opacity: isAnalyzing ? 0.5 : 1
+                }}
+              >
+                {isAnalyzing ? '分析中...' : '再分析を依頼する'}
+              </button>
+            </div>
           )}
         </div>
       </main>

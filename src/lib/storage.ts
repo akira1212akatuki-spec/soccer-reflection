@@ -20,6 +20,8 @@ export interface Match {
   badPoints: string;
   comment: string;
   evaluation: Evaluation;
+  aiAdvice?: string;
+  aiKeyword?: string;
   createdAt: number;
 }
 

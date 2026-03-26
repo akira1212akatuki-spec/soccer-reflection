@@ -8,9 +8,11 @@ import { useRouter } from 'next/navigation';
 interface CalendarProps {
   matches: Match[];
   userName: string;
+  selectedDate: Date | null;
+  onSelectDate: (date: Date | null) => void;
 }
 
-export default function MatchCalendar({ matches, userName }: CalendarProps) {
+export default function MatchCalendar({ matches, userName, selectedDate, onSelectDate }: CalendarProps) {
   const router = useRouter();
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -78,10 +80,10 @@ export default function MatchCalendar({ matches, userName }: CalendarProps) {
             <div 
               key={i} 
               onClick={() => {
-                if (hasMatch) {
-                  // If multiple, just go to the first one for simplicity, or we could show a list.
-                  // For this app, going to the first match on that day is fine.
-                  router.push(`/match/${dayMatches[0].id}?user=${encodeURIComponent(userName)}`);
+                if (isSameDay(day, selectedDate as Date)) {
+                  onSelectDate(null); // Deselect if already selected
+                } else {
+                  onSelectDate(day);
                 }
               }}
               style={{
@@ -92,10 +94,12 @@ export default function MatchCalendar({ matches, userName }: CalendarProps) {
                 fontSize: '0.875rem',
                 borderRadius: '8px',
                 cursor: hasMatch ? 'pointer' : 'default',
-                color: isCurrentMonth ? 'var(--text-main)' : 'rgba(0,0,0,0.2)',
-                background: hasMatch ? 'var(--primary-glow)' : 'transparent',
-                border: hasMatch ? '1px solid var(--primary-color)' : '1px solid transparent',
-                fontWeight: hasMatch ? 700 : 400
+                background: isSameDay(day, selectedDate as Date) ? 'var(--primary-color)' : (hasMatch ? 'var(--primary-glow)' : 'transparent'),
+                border: isSameDay(day, selectedDate as Date) ? '1px solid var(--primary-color)' : (hasMatch ? '1px solid var(--primary-color)' : '1px solid transparent'),
+                fontWeight: (hasMatch || isSameDay(day, selectedDate as Date)) ? 700 : 400,
+                color: isSameDay(day, selectedDate as Date) ? 'white' : (isCurrentMonth ? 'var(--text-main)' : 'rgba(0,0,0,0.2)'),
+                transition: 'all 0.2s ease',
+                boxShadow: isSameDay(day, selectedDate as Date) ? '0 4px 12px rgba(59, 130, 246, 0.4)' : 'none',
               }}
             >
               {format(day, 'd')}

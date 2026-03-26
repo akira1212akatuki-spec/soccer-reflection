@@ -31,10 +31,6 @@ export default function MatchCard({ match, userName, onDelete }: MatchCardProps)
         alignItems: 'center', 
         gap: '12px', 
         padding: '12px 16px', 
-        borderBottom: '1px solid rgba(0,0,0,0.05)',
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        marginBottom: '6px',
         width: '100%'
       }}
     >

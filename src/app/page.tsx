@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
-import { Trophy, Plus, LogOut, User as UserIcon, Trash2, Edit, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trophy, Plus, LogOut, User as UserIcon, Trash2, Edit, ChevronDown, ChevronUp, Calendar as CalendarIcon, X } from 'lucide-react';
+import { isSameDay } from 'date-fns';
 import { User, getStorageUsers, saveStorageUser, getStorageMatches, Match, deleteStorageUser } from '@/lib/storage';
 import MatchCard from '@/components/MatchCard';
 import MatchCalendar from '@/components/Calendar';
@@ -25,6 +26,7 @@ export default function Home() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(true);
   const [showAllHistory, setShowAllHistory] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   // Date filter for average chart
   const [startDate, setStartDate] = useState(() => {
@@ -165,6 +167,10 @@ export default function Home() {
     );
   }
 
+  const filteredMatchesByDate = selectedDate 
+    ? matches.filter(m => isSameDay(new Date(m.date), selectedDate))
+    : matches;
+
   return (
     <>
       <header className="page-header flex flex-col items-center gap-2" style={{ padding: '20px 16px' }}>
@@ -187,8 +193,20 @@ export default function Home() {
       </header>
       
       <main className="main-content" style={{ paddingBottom: '100px' }}>
-        {matches.length === 0 ? (
-          <div className="flex flex-col gap-8 max-w-[800px] mx-auto" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+        <div className="flex flex-col gap-8 max-w-[800px] mx-auto" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          
+          {/* 1. Calendar (NOW AT TOP) */}
+          <div style={{ width: '100%' }}>
+            <MatchCalendar 
+              matches={matches} 
+              userName={currentUser.name} 
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+            />
+          </div>
+
+          {/* 2. Review List (Filtered by selectedDate) */}
+          {matches.length === 0 ? (
             <div className="glass-panel empty-state">
               <Trophy size={48} className="icon-subtle" />
               <div>
@@ -196,123 +214,130 @@ export default function Home() {
                 <p className="form-label mt-4">右下のボタンから最初の一歩を記録しましょう！</p>
               </div>
             </div>
-            
-            <div style={{ width: '100%' }}>
-              <MatchCalendar matches={matches} userName={currentUser.name} />
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-8 max-w-[800px] mx-auto" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-            {/* 1. Review List (Now at TOP, Collapsible & Grouped) */}
+          ) : (
             <div>
-              <div 
-                className="flex items-center justify-between mb-4 cursor-pointer"
-                onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-              >
-                <h2 className="form-label mb-0" style={{fontSize: '1.25rem', color: 'var(--text-main)', fontWeight: 700}}>振り返り一覧</h2>
-                <button className="btn-icon">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <h2 className="form-label mb-0" style={{fontSize: '1.25rem', color: 'var(--text-main)', fontWeight: 700}}>
+                    {selectedDate ? `${selectedDate.getMonth() + 1}月${selectedDate.getDate()}日の振り返り` : '振り返り一覧'}
+                  </h2>
+                  {selectedDate && (
+                    <button 
+                      onClick={() => setSelectedDate(null)}
+                      className="flex items-center gap-1 px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-md text-xs font-medium text-slate-600 transition-colors"
+                    >
+                      解除 <X size={12} />
+                    </button>
+                  )}
+                </div>
+                <button 
+                  className="btn-icon"
+                  onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+                >
                   {isHistoryOpen ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
                 </button>
               </div>
               
               {isHistoryOpen && (
                 <div className="matches-list flex flex-col gap-4 w-full" style={{ display: 'flex', flexDirection: 'column' }}>
-                  {(() => {
-                    const sortedMatches = [...matches].sort((a, b) => b.createdAt - a.createdAt);
-                    const displayedMatches = showAllHistory ? sortedMatches : sortedMatches.slice(0, 5);
-                    
-                    // Group the displayed matches by month
-                    const grouped = displayedMatches.reduce((acc: Record<string, Match[]>, m) => {
-                      const d = new Date(m.date);
-                      const key = `${d.getFullYear()}年${d.getMonth() + 1}月`;
-                      if (!acc[key]) acc[key] = [];
-                      acc[key].push(m);
-                      return acc;
-                    }, {});
+                  {filteredMatchesByDate.length === 0 ? (
+                    <div className="text-center py-8 text-slate-400 font-medium">指定された日の記録はありません。</div>
+                  ) : (
+                    (() => {
+                      const sortedMatches = [...filteredMatchesByDate].sort((a, b) => b.createdAt - a.createdAt);
+                      // Only apply "latest 5" if NOT filtering by date
+                      const displayedMatches = (showAllHistory || selectedDate) ? sortedMatches : sortedMatches.slice(0, 5);
+                      
+                      // Group the displayed matches by month
+                      const grouped = displayedMatches.reduce((acc: Record<string, Match[]>, m) => {
+                        const d = new Date(m.date);
+                        const key = `${d.getFullYear()}年${d.getMonth() + 1}月`;
+                        if (!acc[key]) acc[key] = [];
+                        acc[key].push(m);
+                        return acc;
+                      }, {});
 
-                    return (
-                      <>
-                        {Object.entries(grouped)
-                          .sort((a, b) => {
-                            const parseDate = (s: string) => {
-                              const [y, m] = s.replace('年', '-').replace('月', '').split('-');
-                              return new Date(parseInt(y), parseInt(m) - 1).getTime();
-                            };
-                            return parseDate(b[0]) - parseDate(a[0]);
-                          })
-                          .map(([month, monthMatches]) => (
-                            <div key={month} className="mb-4">
-                              <div className="month-group-header">
-                                <span>{month}</span>
+                      return (
+                        <>
+                          {Object.entries(grouped)
+                            .sort((a, b) => {
+                              const parseDate = (s: string) => {
+                                const [y, m] = s.replace('年', '-').replace('月', '').split('-');
+                                return new Date(parseInt(y), parseInt(m) - 1).getTime();
+                              };
+                              return parseDate(b[0]) - parseDate(a[0]);
+                            })
+                            .map(([month, monthMatches]) => (
+                              <div key={month} className="mb-4">
+                                {!selectedDate && (
+                                  <div className="month-group-header">
+                                    <span>{month}</span>
+                                  </div>
+                                )}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                                  {monthMatches.map(m => (
+                                    <MatchCard 
+                                      key={m.id} 
+                                      match={m} 
+                                      userName={currentUser.name} 
+                                      onDelete={(id) => {
+                                        import('@/lib/storage').then(mod => {
+                                          mod.deleteStorageMatch(id);
+                                          setMatches((prev: Match[]) => prev.filter(match => match.id !== id));
+                                        });
+                                      }} 
+                                    />
+                                  ))}
+                                </div>
                               </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-                                {monthMatches.map(m => (
-                                  <MatchCard 
-                                    key={m.id} 
-                                    match={m} 
-                                    userName={currentUser.name} 
-                                    onDelete={(id) => {
-                                      import('@/lib/storage').then(mod => {
-                                        mod.deleteStorageMatch(id);
-                                        setMatches((prev: Match[]) => prev.filter(match => match.id !== id));
-                                      });
-                                    }} 
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        
-                        {!showAllHistory && matches.length > 5 && (
-                          <button 
-                            className="btn btn-secondary w-full" 
-                            style={{ padding: '12px', fontSize: '0.9rem', marginTop: '8px' }}
-                            onClick={() => setShowAllHistory(true)}
-                          >
-                            以前の記録を表示（残り {matches.length - 5} 件）
-                            <ChevronDown size={18} />
-                          </button>
-                        )}
-                        {showAllHistory && matches.length > 5 && (
-                          <button 
-                            className="btn btn-secondary w-full" 
-                            style={{ padding: '12px', fontSize: '0.9rem', marginTop: '8px' }}
-                            onClick={() => setShowAllHistory(false)}
-                          >
-                            表示を戻す
-                            <ChevronUp size={18} />
-                          </button>
-                        )}
-                      </>
-                    );
-                  })()}
+                            ))}
+                          
+                          {!showAllHistory && !selectedDate && matches.length > 5 && (
+                            <button 
+                              className="btn btn-secondary w-full" 
+                              style={{ padding: '12px', fontSize: '0.9rem', marginTop: '8px' }}
+                              onClick={() => setShowAllHistory(true)}
+                            >
+                              以前の記録を表示（残り {matches.length - 5} 件）
+                              <ChevronDown size={18} />
+                            </button>
+                          )}
+                          {showAllHistory && !selectedDate && matches.length > 5 && (
+                            <button 
+                              className="btn btn-secondary w-full" 
+                              style={{ padding: '12px', fontSize: '0.9rem', marginTop: '8px' }}
+                              onClick={() => setShowAllHistory(false)}
+                            >
+                              表示を戻す
+                              <ChevronUp size={18} />
+                            </button>
+                          )}
+                        </>
+                      );
+                    })()
+                  )}
                 </div>
               )}
             </div>
+          )}
 
-            {/* 2. Calendar (No background, full width) */}
-            <div style={{ width: '100%' }}>
-              <MatchCalendar matches={matches} userName={currentUser.name} />
+          {/* 3. Average Performance (KEEP AT BOTTOM) */}
+          <div className="glass-panel">
+            <h2 className="form-label mb-4" style={{fontSize: '1rem', color: 'var(--text-main)'}}>期間ごとの平均パフォーマンス</h2>
+            <div className="flex gap-2 items-center mb-4">
+              <input type="date" className="form-input" style={{flex: 1, padding: '8px', fontSize: '0.875rem'}} value={startDate} onChange={e => setStartDate(e.target.value)} />
+              <span>〜</span>
+              <input type="date" className="form-input" style={{flex: 1, padding: '8px', fontSize: '0.875rem'}} value={endDate} onChange={e => setEndDate(e.target.value)} />
             </div>
-            
-            {/* 3. Average Performance */}
-            <div className="glass-panel">
-              <h2 className="form-label mb-4" style={{fontSize: '1rem', color: 'var(--text-main)'}}>期間ごとの平均パフォーマンス</h2>
-              <div className="flex gap-2 items-center mb-4">
-                <input type="date" className="form-input" style={{flex: 1, padding: '8px', fontSize: '0.875rem'}} value={startDate} onChange={e => setStartDate(e.target.value)} />
-                <span>〜</span>
-                <input type="date" className="form-input" style={{flex: 1, padding: '8px', fontSize: '0.875rem'}} value={endDate} onChange={e => setEndDate(e.target.value)} />
+            {avgEvaluation ? (
+              <div style={{ height: '400px', width: '100%' }}>
+                <RadarChart currentEvaluation={avgEvaluation} averageEvaluation={avgEvaluation} />
               </div>
-              {avgEvaluation ? (
-                <div style={{ height: '400px', width: '100%' }}>
-                  <RadarChart currentEvaluation={avgEvaluation} averageEvaluation={avgEvaluation} />
-                </div>
-              ) : (
-                <div className="text-center text-muted" style={{padding: '40px 0'}}>この期間のデータはありません</div>
-              )}
-            </div>
+            ) : (
+              <div className="text-center text-muted" style={{padding: '40px 0'}}>この期間のデータはありません</div>
+            )}
           </div>
-        )}
+        </div>
 
         <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 100 }}>
           <Link href="/match/new" className="btn btn-primary" style={{

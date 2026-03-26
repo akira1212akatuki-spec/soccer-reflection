@@ -203,13 +203,15 @@ function MatchDetailContent() {
         </div>
 
         {/* レーダーチャートセクション (下に移動) */}
-        <div className="glass-panel" style={{ padding: '16px' }}>
-          <h2 className="form-label text-center mb-2" style={{ color: 'var(--text-main)' }}>パフォーマンス分析</h2>
-          <RadarChart 
-            currentEvaluation={match.evaluation} 
-            averageEvaluation={chartAverage} 
-            showLegend={true}
-          />
+        <div className="glass-panel" style={{ padding: '24px 16px' }}>
+          <h2 className="form-label text-center mb-4" style={{ color: 'var(--text-main)', fontSize: '1.25rem' }}>パフォーマンス分析</h2>
+          <div style={{ height: '450px', width: '100%' }}>
+            <RadarChart 
+              currentEvaluation={match.evaluation} 
+              averageEvaluation={chartAverage} 
+              showLegend={true}
+            />
+          </div>
         </div>
 
         {/* AIからの振り返り・考察セクション */}

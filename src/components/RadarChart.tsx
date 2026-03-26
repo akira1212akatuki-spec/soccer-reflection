@@ -110,9 +110,9 @@ export default function RadarChart({ currentEvaluation, averageEvaluation, showL
         pointLabels: {
           color: '#334155',
           font: {
-            size: 11,
+            size: 14, // Increased from 11
             family: "'Inter', sans-serif",
-            weight: 600
+            weight: 700
           }
         }
       }
@@ -124,12 +124,12 @@ export default function RadarChart({ currentEvaluation, averageEvaluation, showL
         labels: {
           color: '#334155',
           font: {
-            size: 12,
+            size: 13, // Increased from 12
             family: "'Inter', sans-serif",
             weight: 'bold'
           },
           usePointStyle: true,
-          padding: 20
+          padding: 15
         }
       },
       tooltip: {

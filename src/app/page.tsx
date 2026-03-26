@@ -304,7 +304,9 @@ export default function Home() {
                 <input type="date" className="form-input" style={{flex: 1, padding: '8px', fontSize: '0.875rem'}} value={endDate} onChange={e => setEndDate(e.target.value)} />
               </div>
               {avgEvaluation ? (
-                <RadarChart currentEvaluation={avgEvaluation} averageEvaluation={avgEvaluation} />
+                <div style={{ height: '400px', width: '100%' }}>
+                  <RadarChart currentEvaluation={avgEvaluation} averageEvaluation={avgEvaluation} />
+                </div>
               ) : (
                 <div className="text-center text-muted" style={{padding: '40px 0'}}>この期間のデータはありません</div>
               )}

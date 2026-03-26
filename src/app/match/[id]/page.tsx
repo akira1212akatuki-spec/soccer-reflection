@@ -93,53 +93,43 @@ function MatchDetailContent() {
 
       <main className="main-content">
         <div className="glass-panel">
-          <div className="flex flex-col gap-3 mb-6">
+          <div className="flex flex-col gap-4 mb-6 pb-4" style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+            {/* 1段目: 日付 */}
             <div className="text-muted" style={{ fontSize: '0.9rem' }}>
               {formattedDate}
             </div>
 
+            {/* 2段目: 対戦相手 */}
             <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between', 
-              flexWrap: 'wrap',
-              gap: '12px',
-              paddingBottom: '16px',
-              borderBottom: '1px solid rgba(0,0,0,0.05)'
+              fontSize: '1.6rem', 
+              fontWeight: 900, 
+              color: 'var(--text-main)',
+              lineHeight: 1.2
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
-                <div style={{ 
-                  fontSize: '1.4rem', 
-                  fontWeight: 900, 
-                  color: 'var(--text-main)',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis'
-                }}>
-                  {match.type === 'practice' ? (match.practiceName || '練習メニュー') : match.opponent}
-                </div>
-                
-                <div style={{ 
-                  color: match.type === 'practice' ? '#075985' : 
-                         (match.myScore! > match.opponentScore! ? '#166534' : 
-                          match.myScore! < match.opponentScore! ? '#991b1b' : '#475569'),
-                  fontWeight: 800, 
-                  fontSize: '0.85rem',
-                  backgroundColor: match.type === 'practice' ? '#e0f2fe' : 
-                                  (match.myScore! > match.opponentScore! ? '#dcfce7' : 
-                                   match.myScore! < match.opponentScore! ? '#fee2e2' : '#f1f5f9'),
-                  padding: '4px 10px',
-                  borderRadius: '6px',
-                  whiteSpace: 'nowrap'
-                }}>
-                  {status}
-                </div>
+              {match.type === 'practice' ? (match.practiceName || '練習メニュー') : match.opponent}
+            </div>
+
+            {/* 3段目: 勝敗と点数 */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ 
+                color: match.type === 'practice' ? '#075985' : 
+                       (match.myScore! > match.opponentScore! ? '#166534' : 
+                        match.myScore! < match.opponentScore! ? '#991b1b' : '#475569'),
+                fontWeight: 800, 
+                fontSize: '0.9rem',
+                backgroundColor: match.type === 'practice' ? '#e0f2fe' : 
+                                (match.myScore! > match.opponentScore! ? '#dcfce7' : 
+                                 match.myScore! < match.opponentScore! ? '#fee2e2' : '#f1f5f9'),
+                padding: '4px 12px',
+                borderRadius: '6px'
+              }}>
+                {status}
               </div>
               
               {match.type !== 'practice' && (
-                <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span>{match.myScore}</span>
-                  <span style={{ fontSize: '1.2rem', opacity: 0.3 }}>-</span>
+                  <span style={{ fontSize: '1.5rem', opacity: 0.3 }}>-</span>
                   <span>{match.opponentScore}</span>
                 </div>
               )}

@@ -37,12 +37,12 @@ function NewMatchForm() {
 
   // Evaluation states
   const [evaluation, setEvaluation] = useState<Evaluation>({
-    challenge: 3,
-    transition: 3,
-    intelligence: 3,
-    hardwork: 3,
-    mental: 3,
-    captaincy: 3,
+    challenge: 4,
+    transition: 4,
+    intelligence: 4,
+    hardwork: 4,
+    mental: 4,
+    captaincy: 4,
   });
 
   const handleSliderChange = (key: keyof Evaluation, value: number) => {

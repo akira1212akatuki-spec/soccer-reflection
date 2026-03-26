@@ -253,7 +253,7 @@ export default function Home() {
                         <span>{month}</span>
                         <span style={{fontSize: '0.75rem', fontWeight: 'normal'}}>({monthMatches.length}件)</span>
                       </div>
-                      <div className="flex flex-col gap-3">
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
                         {monthMatches
                           .sort((a, b) => b.createdAt - a.createdAt)
                           .map(m => (

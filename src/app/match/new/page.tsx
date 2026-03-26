@@ -242,11 +242,11 @@ function NewMatchForm() {
             <h2 className="form-label mb-4" style={{ fontSize: '1rem', color: 'var(--text-main)' }}>自己評価 (1〜7点)</h2>
             <div className="evaluation-list">
               {renderSlider('challenge', '1. チャレンジ', '失敗を恐れない姿勢、仕掛け')}
-              {renderSlider('transition', '2. トランジション', '攻守の切り替えの早さ')}
+              {renderSlider('transition', '2. トランジション', '攻守の切り替えの早さ、オンオフの切り替え')}
               {renderSlider('intelligence', '3. インテリジェンス', '状況判断、事前の首振り')}
               {renderSlider('hardwork', '4. ハードワーク', '球際の強さ、運動量')}
               {renderSlider('mental', '5. メンタル', 'ミス後やビハインド時の振る舞い')}
-              {renderSlider('captaincy', '6. キャプテンシー', '周囲への声掛け、試合以外の行動')}
+              {renderSlider('captaincy', '6. キャプテンシー', '周囲への声掛け、試合以外の行動、準備の手際')}
             </div>
           </div>
 

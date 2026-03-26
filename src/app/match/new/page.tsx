@@ -86,17 +86,27 @@ function NewMatchForm() {
         </div>
         <span className="evaluation-value">{evaluation[key]}</span>
       </div>
-      <input
-        type="range"
-        min="1"
-        max="7"
-        step="1"
-        value={evaluation[key]}
-        onChange={(e) => handleSliderChange(key, parseInt(e.target.value))}
-      />
-      <div className="flex justify-between" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-        <span>1 (低)</span>
-        <span>7 (高)</span>
+      <div className="range-container">
+        <input
+          type="range"
+          min="1"
+          max="7"
+          step="1"
+          className="evaluation-slider"
+          style={{
+            background: `linear-gradient(to right, var(--primary-color) ${((evaluation[key] - 1) / 6) * 100}%, rgba(0,0,0,0.1) ${((evaluation[key] - 1) / 6) * 100}%)`
+          }}
+          value={evaluation[key]}
+          onChange={(e) => handleSliderChange(key, parseInt(e.target.value))}
+        />
+        <div className="range-ticks">
+          {[1, 2, 3, 4, 5, 6, 7].map((num) => (
+            <div 
+              key={num} 
+              className={`range-tick ${evaluation[key] >= num ? 'active' : ''}`}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

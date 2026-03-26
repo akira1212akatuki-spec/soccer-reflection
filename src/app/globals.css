@@ -73,13 +73,28 @@ a {
 }
 
 .page-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  background: var(--primary-gradient);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #0f172a;
   margin: 0;
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-title::before {
+  content: "⚽";
+  font-style: normal;
+  display: inline-block;
+  animation: bounce 2s infinite ease-in-out;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
 }
 
 .main-content {
@@ -513,4 +528,28 @@ input[type=range]:focus {
 /* AI Loading Spinner */
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+/* Range Input Ticks */
+.range-container {
+  width: 100%;
+  padding: 10px 0 20px 0;
+}
+
+.range-ticks {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 4px;
+  margin-top: 8px;
+}
+
+.range-tick {
+  width: 4px;
+  height: 4px;
+  background: #cbd5e1;
+  border-radius: 50%;
+}
+
+.range-tick.active {
+  background: var(--primary-color);
+  transform: scale(1.5);
 }

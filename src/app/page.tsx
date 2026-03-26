@@ -24,6 +24,7 @@ export default function Home() {
   // Match states
   const [matches, setMatches] = useState<Match[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(true);
+  const [showAllHistory, setShowAllHistory] = useState(false);
 
   // Date filter for average chart
   const [startDate, setStartDate] = useState(() => {
@@ -40,7 +41,7 @@ export default function Home() {
     const storedUsers = getStorageUsers();
     setUsers(storedUsers);
     
-    // Check if user was previously selected in this session (easiest via simple localstate or just asking to pick)
+    // Check if user was previously selected in this session
     const activeUserId = localStorage.getItem('active_user_id');
     if (activeUserId) {
       const u = storedUsers.find(u => u.id === activeUserId);
@@ -166,8 +167,8 @@ export default function Home() {
 
   return (
     <>
-      <header className="page-header flex flex-col items-center gap-2" style={{ padding: '24px 16px' }}>
-        <h1 className="page-title" style={{ fontSize: '1.75rem', fontWeight: 900, letterSpacing: '-0.025em' }}>SoccerReflex</h1>
+      <header className="page-header flex flex-col items-center gap-2" style={{ padding: '20px 16px' }}>
+        <h1 className="page-title">SoccerReflex</h1>
         <div className="flex items-center gap-4 mt-2">
           <span className="form-label" style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)' }}>{currentUser.name}</span>
           <button 
@@ -187,21 +188,114 @@ export default function Home() {
       
       <main className="main-content" style={{ paddingBottom: '100px' }}>
         {matches.length === 0 ? (
-          <div className="glass-panel empty-state">
-            <Trophy size={48} className="icon-subtle" />
-            <div>
-              <h3>まだ振り返り記録がありません</h3>
-              <p className="form-label mt-4">右下のボタンから最初の一歩を記録しましょう！</p>
+          <div className="flex flex-col gap-8 max-w-[800px] mx-auto" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+            <div className="glass-panel empty-state">
+              <Trophy size={48} className="icon-subtle" />
+              <div>
+                <h3>まだ振り返り記録がありません</h3>
+                <p className="form-label mt-4">右下のボタンから最初の一歩を記録しましょう！</p>
+              </div>
+            </div>
+            
+            <div style={{ width: '100%' }}>
+              <MatchCalendar matches={matches} userName={currentUser.name} />
             </div>
           </div>
         ) : (
           <div className="flex flex-col gap-8 max-w-[800px] mx-auto" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-            {/* 1. Calendar (No background, full width) */}
+            {/* 1. Review List (Now at TOP, Collapsible & Grouped) */}
+            <div>
+              <div 
+                className="flex items-center justify-between mb-4 cursor-pointer"
+                onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+              >
+                <h2 className="form-label mb-0" style={{fontSize: '1.25rem', color: 'var(--text-main)', fontWeight: 700}}>振り返り一覧</h2>
+                <button className="btn-icon">
+                  {isHistoryOpen ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
+                </button>
+              </div>
+              
+              {isHistoryOpen && (
+                <div className="matches-list flex flex-col gap-4 w-full" style={{ display: 'flex', flexDirection: 'column' }}>
+                  {(() => {
+                    const sortedMatches = [...matches].sort((a, b) => b.createdAt - a.createdAt);
+                    const displayedMatches = showAllHistory ? sortedMatches : sortedMatches.slice(0, 5);
+                    
+                    // Group the displayed matches by month
+                    const grouped = displayedMatches.reduce((acc: Record<string, Match[]>, m) => {
+                      const d = new Date(m.date);
+                      const key = `${d.getFullYear()}年${d.getMonth() + 1}月`;
+                      if (!acc[key]) acc[key] = [];
+                      acc[key].push(m);
+                      return acc;
+                    }, {});
+
+                    return (
+                      <>
+                        {Object.entries(grouped)
+                          .sort((a, b) => {
+                            const parseDate = (s: string) => {
+                              const [y, m] = s.replace('年', '-').replace('月', '').split('-');
+                              return new Date(parseInt(y), parseInt(m) - 1).getTime();
+                            };
+                            return parseDate(b[0]) - parseDate(a[0]);
+                          })
+                          .map(([month, monthMatches]) => (
+                            <div key={month} className="mb-4">
+                              <div className="month-group-header">
+                                <span>{month}</span>
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                                {monthMatches.map(m => (
+                                  <MatchCard 
+                                    key={m.id} 
+                                    match={m} 
+                                    userName={currentUser.name} 
+                                    onDelete={(id) => {
+                                      import('@/lib/storage').then(mod => {
+                                        mod.deleteStorageMatch(id);
+                                        setMatches((prev: Match[]) => prev.filter(match => match.id !== id));
+                                      });
+                                    }} 
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        
+                        {!showAllHistory && matches.length > 5 && (
+                          <button 
+                            className="btn btn-secondary w-full" 
+                            style={{ padding: '12px', fontSize: '0.9rem', marginTop: '8px' }}
+                            onClick={() => setShowAllHistory(true)}
+                          >
+                            以前の記録を表示（残り {matches.length - 5} 件）
+                            <ChevronDown size={18} />
+                          </button>
+                        )}
+                        {showAllHistory && matches.length > 5 && (
+                          <button 
+                            className="btn btn-secondary w-full" 
+                            style={{ padding: '12px', fontSize: '0.9rem', marginTop: '8px' }}
+                            onClick={() => setShowAllHistory(false)}
+                          >
+                            表示を戻す
+                            <ChevronUp size={18} />
+                          </button>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+
+            {/* 2. Calendar (No background, full width) */}
             <div style={{ width: '100%' }}>
               <MatchCalendar matches={matches} userName={currentUser.name} />
             </div>
             
-            {/* 2. Average Performance */}
+            {/* 3. Average Performance */}
             <div className="glass-panel">
               <h2 className="form-label mb-4" style={{fontSize: '1rem', color: 'var(--text-main)'}}>期間ごとの平均パフォーマンス</h2>
               <div className="flex gap-2 items-center mb-4">
@@ -213,66 +307,6 @@ export default function Home() {
                 <RadarChart currentEvaluation={avgEvaluation} averageEvaluation={avgEvaluation} />
               ) : (
                 <div className="text-center text-muted" style={{padding: '40px 0'}}>この期間のデータはありません</div>
-              )}
-            </div>
-
-            {/* 3. Review List (Collapsible & Grouped) */}
-            <div>
-              <div 
-                className="flex items-center justify-between mb-2 cursor-pointer"
-                onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-              >
-                <h2 className="form-label mb-0" style={{fontSize: '1.25rem', color: 'var(--text-main)', fontWeight: 700}}>振り返り一覧</h2>
-                <button className="btn-icon">
-                  {isHistoryOpen ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
-                </button>
-              </div>
-              
-              {isHistoryOpen && (
-                <div className="matches-list flex flex-col gap-4 w-full" style={{ display: 'flex', flexDirection: 'column' }}>
-                  {Object.entries(
-                    matches.reduce((acc: Record<string, Match[]>, m) => {
-                      const d = new Date(m.date);
-                      const key = `${d.getFullYear()}年${d.getMonth() + 1}月`;
-                      if (!acc[key]) acc[key] = [];
-                      acc[key].push(m);
-                      return acc;
-                    }, {})
-                  )
-                  .sort((a, b) => {
-                    // Sort YYYY年MM月 string descending
-                    const parseDate = (s: string) => {
-                      const [y, m] = s.replace('年', '-').replace('月', '').split('-');
-                      return new Date(parseInt(y), parseInt(m) - 1).getTime();
-                    };
-                    return parseDate(b[0]) - parseDate(a[0]);
-                  })
-                  .map(([month, monthMatches]) => (
-                    <div key={month} className="mb-4">
-                      <div className="month-group-header">
-                        <span>{month}</span>
-                        <span style={{fontSize: '0.75rem', fontWeight: 'normal'}}>({monthMatches.length}件)</span>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-                        {monthMatches
-                          .sort((a, b) => b.createdAt - a.createdAt)
-                          .map(m => (
-                          <MatchCard 
-                            key={m.id} 
-                            match={m} 
-                            userName={currentUser.name} 
-                            onDelete={(id) => {
-                              import('@/lib/storage').then(mod => {
-                                mod.deleteStorageMatch(id);
-                                setMatches((prev: Match[]) => prev.filter(match => match.id !== id));
-                              });
-                            }} 
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
               )}
             </div>
           </div>

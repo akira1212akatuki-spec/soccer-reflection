@@ -14,6 +14,12 @@ export async function POST(request: Request) {
       );
     }
 
+    const currentScores = matchData.type === 'match' 
+      ? (matchData.scores && matchData.scores.length > 0 
+          ? matchData.scores.map((s: any, i: number) => `第${i+1}試合: ${s.my}-${s.opponent}`).join(', ')
+          : `${matchData.myScore}-${matchData.opponentScore}`)
+      : 'なし';
+
     // 過去の傾向を要約（直近5件程度）
     const historySummary = history && history.length > 0
       ? history.slice(0, 5).map((h: any) => `- ${h.date}: ${h.type === 'match' ? h.opponent : h.practiceName} (評価: ${JSON.stringify(h.evaluation)})`).join('\n')
@@ -27,6 +33,7 @@ export async function POST(request: Request) {
 【今回の記録】
 種類: ${matchData.type === 'match' ? '試合' : '練習'}
 対象: ${matchData.opponent || matchData.practiceName}
+スコア: ${currentScores}
 日付: ${matchData.date}
 良かった点: ${matchData.goodPoints || 'なし'}
 改善点: ${matchData.badPoints || 'なし'}
@@ -35,6 +42,7 @@ export async function POST(request: Request) {
 
 【過去の振り返り履歴（直近5件）】
 ${historySummary}
+
 
 【分析・アドバイスの指示】
 1. プロのコーチとしての「専門性」を出しつつも、中学生にも伝わるように専門用語を噛み砕いて説明してください。

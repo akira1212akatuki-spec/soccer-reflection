@@ -15,6 +15,7 @@ export interface Match {
   practiceName?: string;
   myScore?: number;
   opponentScore?: number;
+  scores?: { my: number; opponent: number }[];
   date: string; // ISO string
   goodPoints: string;
   badPoints: string;
@@ -60,10 +61,19 @@ export const getStorageMatches = (userId?: string): Match[] => {
     const matches: Match[] = JSON.parse(matchesJson);
     
     // Migration: ensure type and necessary fields exist
-    const migratedMatches = matches.map(m => ({
-      ...m,
-      type: m.type || 'match',
-    }));
+    const migratedMatches = matches.map(m => {
+      const match = {
+        ...m,
+        type: m.type || 'match',
+      };
+      
+      // Migrate legacy single score to scores array if scores is missing
+      if (!match.scores && match.type === 'match' && match.myScore !== undefined && match.opponentScore !== undefined) {
+        match.scores = [{ my: match.myScore, opponent: match.opponentScore }];
+      }
+      
+      return match;
+    });
 
     if (userId) {
       return migratedMatches.filter(m => m.userId === userId).sort((a, b) => b.createdAt - a.createdAt);

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Plus, Trash2 } from 'lucide-react';
 import { Match, getStorageMatchById, saveStorageMatch, Evaluation } from '@/lib/storage';
 
 export default function EditMatch() {
@@ -17,8 +17,7 @@ export default function EditMatch() {
   const [type, setType] = useState<'match' | 'practice'>('match');
   const [opponent, setOpponent] = useState('');
   const [practiceName, setPracticeName] = useState('');
-  const [myScore, setMyScore] = useState('');
-  const [opponentScore, setOpponentScore] = useState('');
+  const [scores, setScores] = useState<{my: string, opponent: string}[]>([{my: '', opponent: ''}]);
   const [date, setDate] = useState('');
   const [goodPoints, setGoodPoints] = useState('');
   const [badPoints, setBadPoints] = useState('');
@@ -43,8 +42,15 @@ export default function EditMatch() {
         setType(existingMatch.type || 'match');
         setOpponent(existingMatch.opponent || '');
         setPracticeName(existingMatch.practiceName || '');
-        setMyScore(existingMatch.myScore !== undefined ? existingMatch.myScore.toString() : '');
-        setOpponentScore(existingMatch.opponentScore !== undefined ? existingMatch.opponentScore.toString() : '');
+        
+        if (existingMatch.scores && existingMatch.scores.length > 0) {
+          setScores(existingMatch.scores.map(s => ({ my: s.my.toString(), opponent: s.opponent.toString() })));
+        } else if (existingMatch.myScore !== undefined && existingMatch.opponentScore !== undefined) {
+          // Legacy migration
+          setScores([{ my: existingMatch.myScore.toString(), opponent: existingMatch.opponentScore.toString() }]);
+        } else {
+          setScores([{ my: '', opponent: '' }]);
+        }
         
         // datetime-local support format
         const d = new Date(existingMatch.date);
@@ -72,6 +78,21 @@ export default function EditMatch() {
     });
   };
 
+  const addScore = () => {
+    setScores([...scores, { my: '', opponent: '' }]);
+  };
+
+  const removeScore = (index: number) => {
+    if (scores.length <= 1) return;
+    setScores(scores.filter((_, i) => i !== index));
+  };
+
+  const updateScore = (index: number, field: 'my' | 'opponent', value: string) => {
+    const newScores = [...scores];
+    newScores[index] = { ...newScores[index], [field]: value };
+    setScores(newScores);
+  };
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (!matchData) return;
@@ -83,8 +104,10 @@ export default function EditMatch() {
       type,
       opponent: type === 'match' ? opponent : undefined,
       practiceName: type === 'practice' ? practiceName : undefined,
-      myScore: type === 'match' && myScore ? parseInt(myScore, 10) : undefined,
-      opponentScore: type === 'match' && opponentScore ? parseInt(opponentScore, 10) : undefined,
+      scores: type === 'match' ? scores.map(s => ({
+        my: s.my ? parseInt(s.my, 10) : 0,
+        opponent: s.opponent ? parseInt(s.opponent, 10) : 0
+      })) : undefined,
       date: new Date(date).toISOString(),
       goodPoints,
       badPoints,
@@ -181,26 +204,49 @@ export default function EditMatch() {
                 
                 <div className="form-group">
                   <label className="form-label">スコア</label>
-                  <div className="flex gap-2 items-center">
-                    <input 
-                      type="number" 
-                      min="0"
-                      className="form-input" 
-                      style={{width: '80px', textAlign: 'center'}}
-                      value={myScore} 
-                      onChange={e => setMyScore(e.target.value)} 
-                      placeholder="自" 
-                    />
-                    <span style={{fontWeight: 'bold', color: 'var(--text-muted)'}}>-</span>
-                    <input 
-                      type="number" 
-                      min="0"
-                      className="form-input" 
-                      style={{width: '80px', textAlign: 'center'}}
-                      value={opponentScore} 
-                      onChange={e => setOpponentScore(e.target.value)} 
-                      placeholder="相手" 
-                    />
+                  <div className="flex flex-col gap-3">
+                    {scores.map((score, index) => (
+                      <div key={index} className="flex gap-2 items-center">
+                        <input 
+                          type="number" 
+                          min="0"
+                          className="form-input" 
+                          style={{width: '80px', textAlign: 'center'}}
+                          value={score.my} 
+                          onChange={e => updateScore(index, 'my', e.target.value)} 
+                          placeholder="自" 
+                        />
+                        <span style={{fontWeight: 'bold', color: 'var(--text-muted)'}}>-</span>
+                        <input 
+                          type="number" 
+                          min="0"
+                          className="form-input" 
+                          style={{width: '80px', textAlign: 'center'}}
+                          value={score.opponent} 
+                          onChange={e => updateScore(index, 'opponent', e.target.value)} 
+                          placeholder="相手" 
+                        />
+                        {scores.length > 1 && (
+                          <button 
+                            type="button" 
+                            className="btn-icon" 
+                            onClick={() => removeScore(index)}
+                            style={{ padding: '4px', color: 'var(--accent-color)' }}
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <button 
+                      type="button" 
+                      className="btn btn-secondary" 
+                      onClick={addScore}
+                      style={{ width: 'fit-content', padding: '8px 12px', fontSize: '0.85rem', marginTop: '4px' }}
+                    >
+                      <Plus size={16} />
+                      試合を追加
+                    </button>
                   </div>
                 </div>
               </>

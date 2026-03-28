@@ -99,34 +99,70 @@ function MatchDetailContent() {
   const formattedDate = format(new Date(match.date), 'yyyy年MM月dd日 HH:mm');
   const chartAverage = average || match.evaluation;
 
-  let status = '引き分け';
-  let statusClass = 'status-draw-large';
-  let resultColor = '#64748b'; // Default for draw/practice
-  let resultBg = 'rgba(100, 116, 139, 0.1)'; // Default for draw/practice
+  const renderScoreRow = (my: number, opponent: number, index?: number, total?: number) => {
+    let matchStatus = 'DRAW';
+    let statusGradient = 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)';
+    let statusShadow = 'rgba(148, 163, 184, 0.2)';
 
-  if (match.type === 'practice') {
-    status = '練習';
-    statusClass = 'status-draw-large'; // Use neutral for practice
-    resultColor = '#64748b';
-    resultBg = 'rgba(100, 116, 139, 0.1)';
-  } else if (match.myScore !== undefined && match.opponentScore !== undefined) {
-    if (match.myScore > match.opponentScore) {
-      status = '勝利';
-      statusClass = 'status-win-large';
-      resultColor = '#ef4444'; // Red for win
-      resultBg = 'rgba(239, 68, 68, 0.1)';
-    } else if (match.myScore < match.opponentScore) {
-      status = '敗北';
-      statusClass = 'status-loss-large';
-      resultColor = '#3b82f6'; // Blue for loss
-      resultBg = 'rgba(59, 130, 246, 0.1)';
-    } else { // Draw
-      status = '引き分け';
-      statusClass = 'status-draw-large';
-      resultColor = '#64748b';
-      resultBg = 'rgba(100, 116, 139, 0.1)';
+    if (my > opponent) {
+      matchStatus = 'WIN';
+      statusGradient = 'linear-gradient(135deg, #4ade80 0%, #16a34a 100%)';
+      statusShadow = 'rgba(74, 222, 128, 0.3)';
+    } else if (my < opponent) {
+      matchStatus = 'LOSS';
+      statusGradient = 'linear-gradient(135deg, #fb7185 0%, #e11d48 100%)';
+      statusShadow = 'rgba(251, 113, 133, 0.3)';
     }
-  }
+
+    return (
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        padding: '16px 20px', 
+        background: 'white',
+        borderRadius: '16px',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
+        border: '1px solid rgba(0,0,0,0.03)',
+        marginBottom: '4px'
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          {total && total > 1 && (
+            <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
+              MATCH {index! + 1}
+            </span>
+          )}
+          <div style={{ 
+            padding: '2px 10px', 
+            borderRadius: '20px', 
+            background: statusGradient,
+            color: 'white',
+            fontSize: '0.7rem',
+            fontWeight: 900,
+            textAlign: 'center',
+            width: 'fit-content',
+            boxShadow: `0 4px 10px ${statusShadow}`
+          }}>
+            {matchStatus}
+          </div>
+        </div>
+        
+        <div style={{ 
+          fontSize: '2.2rem', 
+          fontWeight: 900, 
+          color: 'var(--text-main)', 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '12px',
+          fontFamily: "'Inter', sans-serif"
+        }}>
+          <span style={{ minWidth: '35px', textAlign: 'right' }}>{my}</span>
+          <span style={{ fontSize: '1.2rem', opacity: 0.2 }}>:</span>
+          <span style={{ minWidth: '35px', textAlign: 'left' }}>{opponent}</span>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -183,32 +219,41 @@ function MatchDetailContent() {
               )}
             </div>
 
-            {/* 3段目: 勝敗と点数 */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ 
-                color: match.type === 'practice' ? '#075985' : 
-                       (match.myScore! > match.opponentScore! ? '#166534' : 
-                        match.myScore! < match.opponentScore! ? '#991b1b' : '#475569'),
-                fontWeight: 800, 
-                fontSize: '0.9rem',
-                backgroundColor: match.type === 'practice' ? '#e0f2fe' : 
-                                (match.myScore! > match.opponentScore! ? '#dcfce7' : 
-                                 match.myScore! < match.opponentScore! ? '#fee2e2' : '#f1f5f9'),
-                padding: '4px 12px',
-                borderRadius: '6px'
-              }}>
-                {status}
-              </div>
+            {/* 3段目: スコア（複数対応） */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {match.type === 'match' && (
+                <>
+                  {match.scores && match.scores.length > 0 ? (
+                    match.scores.map((s, idx) => (
+                      <React.Fragment key={idx}>
+                        {renderScoreRow(s.my, s.opponent, idx, match.scores!.length)}
+                      </React.Fragment>
+                    ))
+                  ) : (
+                    match.myScore !== undefined && match.opponentScore !== undefined && (
+                      renderScoreRow(match.myScore, match.opponentScore)
+                    )
+                  )}
+                </>
+              )}
               
-              {match.type !== 'practice' && (
-                <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>{match.myScore}</span>
-                  <span style={{ fontSize: '1.5rem', opacity: 0.3 }}>-</span>
-                  <span>{match.opponentScore}</span>
+              {match.type === 'practice' && (
+                <div style={{ 
+                  color: '#075985',
+                  fontWeight: 800, 
+                  fontSize: '0.9rem',
+                  backgroundColor: '#e0f2fe',
+                  padding: '8px 16px',
+                  borderRadius: '12px',
+                  width: 'fit-content',
+                  boxShadow: '0 4px 12px rgba(7, 89, 133, 0.1)'
+                }}>
+                  PRACTICE SESSION
                 </div>
               )}
             </div>
           </div>
+
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ padding: '16px', background: 'rgba(0,0,0,0.03)', borderRadius: '8px', border: '1px solid var(--surface-border)' }}>

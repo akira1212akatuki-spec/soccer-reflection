@@ -14,12 +14,22 @@ export default function MatchCard({ match, userName, onDelete }: MatchCardProps)
   const router = useRouter();
   const formattedDate = format(new Date(match.date), 'yyyy/MM/dd HH:mm');
   
-  const getStatusLabel = () => {
-    if (match.type === 'practice') return <span className="status-label status-practice">練習</span>;
-    if (match.myScore === undefined || match.opponentScore === undefined) return null;
-    if (match.myScore > match.opponentScore) return <span className="status-label status-win">勝利</span>;
-    if (match.myScore < match.opponentScore) return <span className="status-label status-loss">敗北</span>;
-    return <span className="status-label status-draw">引分</span>;
+  const renderScoreLine = (my: number, opponent: number, showLabel: boolean = true) => {
+    let label = null;
+    if (showLabel) {
+      if (my > opponent) label = <span className="status-label status-win" style={{ fontSize: '0.65rem', padding: '1px 4px' }}>勝利</span>;
+      else if (my < opponent) label = <span className="status-label status-loss" style={{ fontSize: '0.65rem', padding: '1px 4px' }}>敗北</span>;
+      else label = <span className="status-label status-draw" style={{ fontSize: '0.65rem', padding: '1px 4px' }}>引分</span>;
+    }
+
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end', width: '100%' }}>
+        {label}
+        <div style={{ fontWeight: 700, fontSize: '0.95rem', minWidth: '40px', textAlign: 'center', color: 'var(--text-main)' }}>
+          {my}-{opponent}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -28,24 +38,37 @@ export default function MatchCard({ match, userName, onDelete }: MatchCardProps)
       onClick={() => router.push(`/match/${match.id}?user=${encodeURIComponent(userName)}`)}
       style={{ 
         display: 'flex', 
-        alignItems: 'center', 
+        alignItems: 'flex-start', 
         gap: '12px', 
         padding: '12px 16px', 
         width: '100%'
       }}
     >
-      <div style={{ flex: '1', minWidth: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div style={{ flex: '1', minWidth: 0, display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '2px' }}>
         <span style={{ fontWeight: 700, fontSize: '1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {match.type === 'practice' ? (match.practiceName || '練習') : match.opponent}
         </span>
-        {getStatusLabel()}
+        {match.type === 'practice' && <span className="status-label status-practice">練習</span>}
       </div>
 
-      {match.type !== 'practice' && (
-        <div style={{ fontWeight: 700, fontSize: '1rem', minWidth: '50px', textAlign: 'center' }}>
-          {match.myScore}-{match.opponentScore}
-        </div>
-      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
+        {match.type !== 'practice' && (
+          <>
+            {match.scores && match.scores.length > 0 ? (
+              match.scores.map((s, idx) => (
+                <div key={idx}>
+                  {renderScoreLine(s.my, s.opponent)}
+                </div>
+              ))
+            ) : (
+              match.myScore !== undefined && match.opponentScore !== undefined && (
+                renderScoreLine(match.myScore, match.opponentScore)
+              )
+            )}
+          </>
+        )}
+      </div>
+
 
       <div style={{ fontSize: '0.85rem', color: '#64748b', whiteSpace: 'nowrap' }}>
         {format(new Date(match.date), 'MM/dd')}

@@ -262,7 +262,7 @@ function NewMatchForm() {
                 <label className="form-label" style={{ fontSize: '0.8rem', opacity: 0.8 }}>詳細：良かったプレーは？なぜうまくいったと思う？</label>
                 <textarea 
                   className="form-textarea" 
-                  style={{ minHeight: '60px' }}
+                  style={{ minHeight: '60px', width: '100%' }}
                   value={goodPointsDetail} 
                   onChange={e => setGoodPointsDetail(e.target.value)} 
                   placeholder="具体的に記入" 
@@ -282,7 +282,7 @@ function NewMatchForm() {
                 <label className="form-label" style={{ fontSize: '0.8rem', opacity: 0.8 }}>詳細：次はどうすればよくなる？具体的に何を意識する？</label>
                 <textarea 
                   className="form-textarea" 
-                  style={{ minHeight: '60px' }}
+                  style={{ minHeight: '60px', width: '100%' }}
                   value={badPointsDetail} 
                   onChange={e => setBadPointsDetail(e.target.value)} 
                   placeholder="具体的に記入" 

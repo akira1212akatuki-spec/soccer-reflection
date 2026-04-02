@@ -20,7 +20,9 @@ export default function EditMatch() {
   const [scores, setScores] = useState<{my: string, opponent: string}[]>([{my: '', opponent: ''}]);
   const [date, setDate] = useState('');
   const [goodPoints, setGoodPoints] = useState('');
+  const [goodPointsDetail, setGoodPointsDetail] = useState('');
   const [badPoints, setBadPoints] = useState('');
+  const [badPointsDetail, setBadPointsDetail] = useState('');
   const [comment, setComment] = useState('');
 
   // Evaluation states
@@ -62,7 +64,9 @@ export default function EditMatch() {
         setDate(`${yyyy}-${MM}-${DD}T${hh}:${mm}`);
         
         setGoodPoints(existingMatch.goodPoints || '');
+        setGoodPointsDetail(existingMatch.goodPointsDetail || '');
         setBadPoints(existingMatch.badPoints || '');
+        setBadPointsDetail(existingMatch.badPointsDetail || '');
         setComment(existingMatch.comment || '');
         if (existingMatch.evaluation) {
           setEvaluation(existingMatch.evaluation);
@@ -110,7 +114,9 @@ export default function EditMatch() {
       })) : undefined,
       date: new Date(date).toISOString(),
       goodPoints,
+      goodPointsDetail,
       badPoints,
+      badPointsDetail,
       comment,
       evaluation,
     };
@@ -283,6 +289,16 @@ export default function EditMatch() {
                 onChange={e => setGoodPoints(e.target.value)} 
                 placeholder="良かった点や成功したプレー" 
               />
+              <div className="mt-2">
+                <label className="form-label" style={{ fontSize: '0.8rem', opacity: 0.8 }}>詳細：良かったプレーは？なぜうまくいったと思う？</label>
+                <textarea 
+                  className="form-textarea" 
+                  style={{ minHeight: '60px' }}
+                  value={goodPointsDetail} 
+                  onChange={e => setGoodPointsDetail(e.target.value)} 
+                  placeholder="具体的に記入" 
+                />
+              </div>
             </div>
             
             <div className="form-group mb-0">
@@ -293,6 +309,16 @@ export default function EditMatch() {
                 onChange={e => setBadPoints(e.target.value)} 
                 placeholder="次に向けての課題や反省点" 
               />
+              <div className="mt-2">
+                <label className="form-label" style={{ fontSize: '0.8rem', opacity: 0.8 }}>詳細：次はどうすればよくなる？具体的に何を意識する？</label>
+                <textarea 
+                  className="form-textarea" 
+                  style={{ minHeight: '60px' }}
+                  value={badPointsDetail} 
+                  onChange={e => setBadPointsDetail(e.target.value)} 
+                  placeholder="具体的に記入" 
+                />
+              </div>
             </div>
 
             <div className="form-group mt-4 mb-0">

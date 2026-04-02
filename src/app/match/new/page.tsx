@@ -31,7 +31,9 @@ function NewMatchForm() {
     return now.toISOString().slice(0, 16);
   });
   const [goodPoints, setGoodPoints] = useState('');
+  const [goodPointsDetail, setGoodPointsDetail] = useState('');
   const [badPoints, setBadPoints] = useState('');
+  const [badPointsDetail, setBadPointsDetail] = useState('');
   const [comment, setComment] = useState('');
 
   // Evaluation states
@@ -81,7 +83,9 @@ function NewMatchForm() {
       })) : undefined,
       date: new Date(date).toISOString(),
       goodPoints,
+      goodPointsDetail,
       badPoints,
+      badPointsDetail,
       comment,
       evaluation,
       createdAt: Date.now(),
@@ -254,6 +258,16 @@ function NewMatchForm() {
                 onChange={e => setGoodPoints(e.target.value)} 
                 placeholder="良かった点や成功したプレー" 
               />
+              <div className="mt-2">
+                <label className="form-label" style={{ fontSize: '0.8rem', opacity: 0.8 }}>詳細：良かったプレーは？なぜうまくいったと思う？</label>
+                <textarea 
+                  className="form-textarea" 
+                  style={{ minHeight: '60px' }}
+                  value={goodPointsDetail} 
+                  onChange={e => setGoodPointsDetail(e.target.value)} 
+                  placeholder="具体的に記入" 
+                />
+              </div>
             </div>
             
             <div className="form-group mb-0">
@@ -264,6 +278,16 @@ function NewMatchForm() {
                 onChange={e => setBadPoints(e.target.value)} 
                 placeholder="次に向けての課題や反省点" 
               />
+              <div className="mt-2">
+                <label className="form-label" style={{ fontSize: '0.8rem', opacity: 0.8 }}>詳細：次はどうすればよくなる？具体的に何を意識する？</label>
+                <textarea 
+                  className="form-textarea" 
+                  style={{ minHeight: '60px' }}
+                  value={badPointsDetail} 
+                  onChange={e => setBadPointsDetail(e.target.value)} 
+                  placeholder="具体的に記入" 
+                />
+              </div>
             </div>
 
             <div className="form-group mt-4 mb-0">

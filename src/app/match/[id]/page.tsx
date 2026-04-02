@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, Calendar, Swords, Trash2, Edit } from 'lucide-react';
+import { ChevronLeft, Calendar, Swords, Trash2, Edit, MessageCircle, Lock, Unlock } from 'lucide-react';
 import { format } from 'date-fns';
 import { 
   Match, 
@@ -26,6 +26,9 @@ function MatchDetailContent() {
   const [aiAdvice, setAiAdvice] = useState<string | null>(null);
   const [aiKeyword, setAiKeyword] = useState<string | null>(null);
   const [errorHeader, setErrorHeader] = useState<string | null>(null);
+  const [question, setQuestion] = useState('');
+  const [isAnswering, setIsAnswering] = useState(false);
+  const [isFixing, setIsFixing] = useState(false);
 
   // 検索用キーワードマッピング (ID管理から、より確実な検索ワード管理へ移行)
   const youtubeSearchKeywords: Record<string, string> = {
@@ -46,7 +49,6 @@ function MatchDetailContent() {
     setIsAnalyzing(true);
     setErrorHeader(null);
     try {
-      // 過去の履歴（今回の試合を除く）を取得して渡す
       const history = getStorageMatches(match.userId).filter(m => m.id !== match.id);
       
       const response = await fetch('/api/analyze', {
@@ -61,11 +63,11 @@ function MatchDetailContent() {
         setAiAdvice(data.advice);
         setAiKeyword(data.keyword);
         
-        // 分析結果を保存
         const updatedMatch: Match = {
           ...match,
           aiAdvice: data.advice,
-          aiKeyword: data.keyword
+          aiKeyword: data.keyword,
+          aiFixed: true // 自動的に固定
         };
         saveStorageMatch(updatedMatch);
         setMatch(updatedMatch);
@@ -75,6 +77,57 @@ function MatchDetailContent() {
       setErrorHeader('AI分析中にエラーが発生しました。');
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const handleToggleFix = () => {
+    if (!match) return;
+    const updatedMatch: Match = {
+      ...match,
+      aiFixed: !match.aiFixed
+    };
+    saveStorageMatch(updatedMatch);
+    setMatch(updatedMatch);
+  };
+
+  const handleAskQuestion = async () => {
+    if (!match || !question.trim()) return;
+    setIsAnswering(true);
+    try {
+      const history = getStorageMatches(match.userId).filter(m => m.id !== match.id);
+      const response = await fetch('/api/question', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          matchData: match, 
+          question, 
+          history,
+          chatHistory: match.aiQuestions || []
+        })
+      });
+      const data = await response.json();
+      if (data.error) {
+        alert(data.error);
+      } else {
+        const newQuestion = {
+          question,
+          answer: data.answer,
+          persona: '日本代表クラス',
+          timestamp: Date.now()
+        };
+        const updatedMatch: Match = {
+          ...match,
+          aiQuestions: [...(match.aiQuestions || []), newQuestion]
+        };
+        saveStorageMatch(updatedMatch);
+        setMatch(updatedMatch);
+        setQuestion('');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('質問の送信中にエラーが発生しました。');
+    } finally {
+      setIsAnswering(false);
     }
   };
 
@@ -261,12 +314,32 @@ function MatchDetailContent() {
               <p style={{ whiteSpace: 'pre-wrap', fontSize: '0.9375rem', lineHeight: 1.6 }}>
                 {match.goodPoints || '未入力'}
               </p>
+              {match.goodPointsDetail && (
+                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+                  <h4 style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
+                    詳細：良かったプレーは？なぜうまくいったと思う？
+                  </h4>
+                  <p style={{ whiteSpace: 'pre-wrap', fontSize: '0.9rem', lineHeight: 1.5, color: 'var(--text-main)' }}>
+                    {match.goodPointsDetail}
+                  </p>
+                </div>
+              )}
             </div>
             <div style={{ padding: '16px', background: 'rgba(0,0,0,0.03)', borderRadius: '8px', border: '1px solid var(--surface-border)' }}>
               <h3 className="form-label mb-2" style={{ color: 'var(--accent-color)' }}>改善点</h3>
               <p style={{ whiteSpace: 'pre-wrap', fontSize: '0.9375rem', lineHeight: 1.6 }}>
                 {match.badPoints || '未入力'}
               </p>
+              {match.badPointsDetail && (
+                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+                  <h4 style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
+                    詳細：次はどうすればよくなる？具体的に何を意識する？
+                  </h4>
+                  <p style={{ whiteSpace: 'pre-wrap', fontSize: '0.9rem', lineHeight: 1.5, color: 'var(--text-main)' }}>
+                    {match.badPointsDetail}
+                  </p>
+                </div>
+              )}
             </div>
             <div style={{ padding: '16px', background: 'rgba(0,0,0,0.03)', borderRadius: '8px', border: '1px solid var(--surface-border)' }}>
               <h3 className="form-label mb-2" style={{ color: 'var(--text-main)' }}>感想・メモ</h3>
@@ -310,6 +383,15 @@ function MatchDetailContent() {
                 分析を依頼する
               </button>
             )}
+            {aiAdvice && (
+              <button 
+                onClick={handleToggleFix}
+                className={match.aiFixed ? "text-primary" : "text-muted"}
+                title={match.aiFixed ? "分析を固定中" : "分析を固定する"}
+              >
+                {match.aiFixed ? <Lock size={18} /> : <Unlock size={18} />}
+              </button>
+            )}
           </div>
 
           {isAnalyzing ? (
@@ -321,22 +403,62 @@ function MatchDetailContent() {
               `}</style>
             </div>
           ) : aiAdvice ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ 
-                padding: '16px', 
-                background: 'white', 
-                borderRadius: '12px', 
-                border: '1px solid rgba(22, 101, 52, 0.1)',
-                fontSize: '0.95rem',
-                lineHeight: 1.7,
-                color: '#166534'
-              }}>
-                {aiAdvice}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {/* メッセージリスト（初期分析 + 追加質問） */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* 1. 初期分析（コーチ） */}
+                <div style={{ alignSelf: 'flex-start', background: 'white', padding: '16px', borderRadius: '14px 14px 14px 2px', fontSize: '0.95rem', maxWidth: '90%', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid rgba(22, 101, 52, 0.1)', color: '#166534', lineHeight: 1.7 }}>
+                  <div style={{ fontWeight: 800, fontSize: '0.75rem', marginBottom: '8px', opacity: 0.7, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span>🤖</span> AIプロコーチの分析
+                  </div>
+                  {aiAdvice}
+                </div>
+
+                {/* 2. 追加の質問履歴 */}
+                {(match.aiQuestions || []).map((q, idx) => (
+                  <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ alignSelf: 'flex-end', background: '#dcfce7', padding: '10px 14px', borderRadius: '14px 14px 2px 14px', fontSize: '0.875rem', maxWidth: '85%', border: '1px solid #bbf7d0' }}>
+                      {q.question}
+                    </div>
+                    <div style={{ alignSelf: 'flex-start', background: 'white', padding: '12px 16px', borderRadius: '14px 14px 14px 2px', fontSize: '0.9rem', maxWidth: '90%', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid rgba(22, 101, 52, 0.1)', color: '#166534', lineHeight: 1.6 }}>
+                      <div style={{ fontWeight: 800, fontSize: '0.75rem', marginBottom: '4px', opacity: 0.7, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span>✨</span> 日本代表クラスの選手
+                      </div>
+                      {q.answer}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* 質問入力エリア */}
+              <div style={{ borderTop: '1px solid rgba(22, 101, 52, 0.1)', paddingTop: '20px' }}>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    style={{ flex: 1, borderRadius: '12px', border: '1px solid #bbf7d0' }}
+                    placeholder="コーチにさらに質問する..."
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAskQuestion()}
+                  />
+                  <button 
+                    className="btn-primary" 
+                    style={{ width: 'auto', padding: '0 20px', borderRadius: '12px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+                    onClick={handleAskQuestion}
+                    disabled={isAnswering || !question.trim()}
+                  >
+                    {isAnswering ? '分析中...' : 'AIプロコーチからの返信'}
+                  </button>
+                </div>
+                <p style={{ fontSize: '0.75rem', color: '#166534', opacity: 0.7, marginTop: '8px', textAlign: 'center' }}>
+                  日本代表プロ選手があなたの質問に答えてくれます
+                </p>
               </div>
 
               {/* YouTube動画提案 */}
               {aiKeyword && (
-                  <div style={{ marginTop: '8px' }}>
+                  <div style={{ marginTop: '8px', borderTop: '1px solid rgba(22, 101, 52, 0.1)', paddingTop: '20px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                       <span style={{ fontSize: '1.25rem' }}>📺</span>
                       <h3 style={{ fontSize: '0.95rem', color: '#166534', fontWeight: 700, margin: 0 }}>
@@ -421,7 +543,7 @@ function MatchDetailContent() {
             </p>
           )}
 
-          {aiAdvice && !isAnalyzing && (
+          {aiAdvice && !isAnalyzing && !match.aiFixed && (
             <div style={{ marginTop: '24px', borderTop: '1px solid rgba(22, 101, 52, 0.1)', paddingTop: '16px', textAlign: 'center' }}>
               <button 
                 onClick={handleAnalyze}
@@ -442,6 +564,7 @@ function MatchDetailContent() {
               </button>
             </div>
           )}
+
         </div>
       </main>
     </>

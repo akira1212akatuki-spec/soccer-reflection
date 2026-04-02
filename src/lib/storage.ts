@@ -18,11 +18,15 @@ export interface Match {
   scores?: { my: number; opponent: number }[];
   date: string; // ISO string
   goodPoints: string;
+  goodPointsDetail?: string;
   badPoints: string;
+  badPointsDetail?: string;
   comment: string;
   evaluation: Evaluation;
   aiAdvice?: string;
   aiKeyword?: string;
+  aiQuestions?: { question: string; answer: string; persona?: string; timestamp: number }[];
+  aiFixed?: boolean;
   createdAt: number;
 }
 

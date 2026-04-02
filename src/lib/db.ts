@@ -30,11 +30,13 @@ export const getMatches = async (userIdFilter?: string, isParent: boolean = fals
     // 親権限の場合は全てのデータを取得する
     let q;
     if (isParent) {
-      q = query(matchesRef, orderBy("createdAt", "desc"));
+      // 全件取得
+      q = query(matchesRef);
     } else if (userIdFilter) {
-      q = query(matchesRef, where("userId", "==", userIdFilter), orderBy("createdAt", "desc"));
+      // userIdでフィルタ（orderByを外して複合インデックスエラーを回避）
+      q = query(matchesRef, where("userId", "==", userIdFilter));
     } else {
-      q = query(matchesRef, orderBy("createdAt", "desc"));
+      q = query(matchesRef);
     }
     
     const querySnapshot = await getDocs(q);
@@ -42,7 +44,9 @@ export const getMatches = async (userIdFilter?: string, isParent: boolean = fals
     querySnapshot.forEach((doc) => {
       matches.push(doc.data() as Match);
     });
-    return matches;
+    
+    // JavaScript側で新着順にソートする
+    return matches.sort((a, b) => b.createdAt - a.createdAt);
   } catch (error) {
     console.error("Error getting matches:", error);
     return [];

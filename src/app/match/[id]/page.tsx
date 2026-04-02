@@ -6,31 +6,35 @@ import { ChevronLeft, Calendar, Swords, Trash2, Edit, MessageCircle, Lock, Unloc
 import { format } from 'date-fns';
 import { 
   Match, 
-  getStorageMatchById, 
-  calculateAverageEvaluation,
-  deleteStorageMatch,
-  getStorageMatches,
-  saveStorageMatch,
   Evaluation 
 } from '@/lib/storage';
+import {
+  getMatchById,
+  deleteMatch,
+  saveMatch,
+  getMatches,
+  calculateAverageEvaluationFromFirestore
+} from '@/lib/db';
+import { useAuth } from '@/contexts/AuthContext';
 import RadarChart from '@/components/RadarChart';
 
 function MatchDetailContent() {
   const router = useRouter();
   const params = useParams();
   const matchId = params.id as string;
+  const { user } = useAuth();
   
   const [match, setMatch] = useState<Match | null>(null);
   const [average, setAverage] = useState<Evaluation | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiAdvice, setAiAdvice] = useState<string | null>(null);
   const [aiKeyword, setAiKeyword] = useState<string | null>(null);
   const [errorHeader, setErrorHeader] = useState<string | null>(null);
   const [question, setQuestion] = useState('');
   const [isAnswering, setIsAnswering] = useState(false);
-  const [isFixing, setIsFixing] = useState(false);
 
-  // 検索用キーワードマッピング (ID管理から、より確実な検索ワード管理へ移行)
   const youtubeSearchKeywords: Record<string, string> = {
     'シュート': 'シュート練習 決定力向上',
     'ドリブル': 'ドリブル 抜き技 基礎',
@@ -44,12 +48,40 @@ function MatchDetailContent() {
     '1vs1': 'サッカー 1vs1 攻撃 守備'
   };
 
+  useEffect(() => {
+    const fetchMatchDetails = async () => {
+      setIsLoading(true);
+      try {
+        if (!user) return;
+        const fetchedMatch = await getMatchById(matchId);
+        if (fetchedMatch) {
+          setMatch(fetchedMatch);
+          if (fetchedMatch.aiAdvice) setAiAdvice(fetchedMatch.aiAdvice);
+          if (fetchedMatch.aiKeyword) setAiKeyword(fetchedMatch.aiKeyword);
+          
+          const avg = await calculateAverageEvaluationFromFirestore(fetchedMatch.userId);
+          setAverage(avg);
+        } else {
+          router.push('/');
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    if (matchId) {
+      fetchMatchDetails();
+    }
+  }, [matchId, router, user]);
+
   const handleAnalyze = async () => {
     if (!match) return;
     setIsAnalyzing(true);
     setErrorHeader(null);
     try {
-      const history = getStorageMatches(match.userId).filter(m => m.id !== match.id);
+      const allMatches = await getMatches(match.userId);
+      const history = allMatches.filter(m => m.id !== match.id);
       
       const response = await fetch('/api/analyze', {
         method: 'POST',
@@ -67,9 +99,9 @@ function MatchDetailContent() {
           ...match,
           aiAdvice: data.advice,
           aiKeyword: data.keyword,
-          aiFixed: true // 自動的に固定
+          aiFixed: true
         };
-        saveStorageMatch(updatedMatch);
+        await saveMatch(updatedMatch);
         setMatch(updatedMatch);
       }
     } catch (err) {
@@ -80,13 +112,13 @@ function MatchDetailContent() {
     }
   };
 
-  const handleToggleFix = () => {
+  const handleToggleFix = async () => {
     if (!match) return;
     const updatedMatch: Match = {
       ...match,
       aiFixed: !match.aiFixed
     };
-    saveStorageMatch(updatedMatch);
+    await saveMatch(updatedMatch);
     setMatch(updatedMatch);
   };
 
@@ -94,7 +126,9 @@ function MatchDetailContent() {
     if (!match || !question.trim()) return;
     setIsAnswering(true);
     try {
-      const history = getStorageMatches(match.userId).filter(m => m.id !== match.id);
+      const allMatches = await getMatches(match.userId);
+      const history = allMatches.filter(m => m.id !== match.id);
+
       const response = await fetch('/api/question', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -119,7 +153,7 @@ function MatchDetailContent() {
           ...match,
           aiQuestions: [...(match.aiQuestions || []), newQuestion]
         };
-        saveStorageMatch(updatedMatch);
+        await saveMatch(updatedMatch);
         setMatch(updatedMatch);
         setQuestion('');
       }
@@ -131,23 +165,20 @@ function MatchDetailContent() {
     }
   };
 
-  useEffect(() => {
-    if (matchId) {
-      const storedMatch = getStorageMatchById(matchId);
-      if (storedMatch) {
-        setMatch(storedMatch);
-        if (storedMatch.aiAdvice) setAiAdvice(storedMatch.aiAdvice);
-        if (storedMatch.aiKeyword) setAiKeyword(storedMatch.aiKeyword);
-        
-        const avg = calculateAverageEvaluation(storedMatch.userId);
-        setAverage(avg);
-      } else {
+  const handleDelete = async () => {
+    if (window.confirm('この試合の記録を削除してもよろしいですか？')) {
+      if (match) {
+        await deleteMatch(match.id);
         router.push('/');
       }
     }
-  }, [matchId, router]);
+  };
 
+  if (isLoading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
   if (!match) return null;
+
+  // 親アカウントかどうか簡易判定（自分以外のデータを見ている、あるいはemailにadminが含まれる）
+  const isParentView = user && (user.uid !== match.userId || user.email?.includes('admin') || user.email?.includes('parent'));
 
   const formattedDate = format(new Date(match.date), 'yyyy年MM月dd日 HH:mm');
   const chartAverage = average || match.evaluation;
@@ -219,35 +250,33 @@ function MatchDetailContent() {
 
   return (
     <>
-      <header className="page-header">
+      <header className="page-header relative z-10">
         <button className="btn-icon" onClick={() => router.push('/')}>
           <ChevronLeft size={20} />
         </button>
-        <h1 className="page-title">振り返り詳細</h1>
-        <div className="flex gap-2">
-          <button className="btn-icon" onClick={() => router.push(`/match/edit/${match.id}`)}>
-            <Edit size={20} className="icon-subtle" />
-          </button>
-          <button className="btn-icon" onClick={() => {
-            if (window.confirm('この試合の記録を削除してもよろしいですか？')) {
-              deleteStorageMatch(match.id);
-              router.push('/');
-            }
-          }}>
-            <Trash2 size={20} className="icon-accent" />
-          </button>
-        </div>
+        <h1 className="page-title text-base sm:text-lg whitespace-nowrap overflow-hidden text-ellipsis px-2 m-0">振り返り詳細</h1>
+        
+        {!isParentView ? (
+          <div className="flex gap-2">
+            <button className="btn-icon" onClick={() => router.push(`/match/edit/${match.id}`)}>
+              <Edit size={20} className="icon-subtle" />
+            </button>
+            <button className="btn-icon" onClick={handleDelete}>
+              <Trash2 size={20} className="icon-accent" />
+            </button>
+          </div>
+        ) : (
+          <div style={{ width: 40 }} />
+        )}
       </header>
 
       <main className="main-content">
         <div className="glass-panel">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-            {/* 1段目: 日付 */}
             <div className="text-muted" style={{ fontSize: '0.9rem' }}>
-              {formattedDate}
+              {formattedDate} {match.userName && `(選手: ${match.userName})`}
             </div>
 
-            {/* 2段目: 対戦相手 */}
             <div style={{ 
               color: 'var(--text-main)',
               lineHeight: 1.2,
@@ -272,7 +301,6 @@ function MatchDetailContent() {
               )}
             </div>
 
-            {/* 3段目: スコア（複数対応） */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {match.type === 'match' && (
                 <>
@@ -350,7 +378,6 @@ function MatchDetailContent() {
           </div>
         </div>
 
-        {/* レーダーチャートセクション (下に移動) */}
         <div className="glass-panel" style={{ padding: '24px 16px' }}>
           <h2 className="form-label text-center mb-4" style={{ color: 'var(--text-main)', fontSize: '1.25rem' }}>パフォーマンス分析</h2>
           <div style={{ height: '450px', width: '100%' }}>
@@ -362,7 +389,6 @@ function MatchDetailContent() {
           </div>
         </div>
 
-        {/* AIからの振り返り・考察セクション */}
         <div className="glass-panel" style={{ 
           padding: '24px', 
           background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', 
@@ -404,9 +430,7 @@ function MatchDetailContent() {
             </div>
           ) : aiAdvice ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              {/* メッセージリスト（初期分析 + 追加質問） */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {/* 1. 初期分析（コーチ） */}
                 <div style={{ alignSelf: 'flex-start', background: 'white', padding: '16px', borderRadius: '14px 14px 14px 2px', fontSize: '0.95rem', maxWidth: '90%', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid rgba(22, 101, 52, 0.1)', color: '#166534', lineHeight: 1.7 }}>
                   <div style={{ fontWeight: 800, fontSize: '0.75rem', marginBottom: '8px', opacity: 0.7, display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <span>🤖</span> AIプロコーチの分析
@@ -414,7 +438,6 @@ function MatchDetailContent() {
                   {aiAdvice}
                 </div>
 
-                {/* 2. 追加の質問履歴 */}
                 {(match.aiQuestions || []).map((q, idx) => (
                   <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <div style={{ alignSelf: 'flex-end', background: '#dcfce7', padding: '10px 14px', borderRadius: '14px 14px 2px 14px', fontSize: '0.875rem', maxWidth: '85%', border: '1px solid #bbf7d0' }}>
@@ -430,33 +453,33 @@ function MatchDetailContent() {
                 ))}
               </div>
 
-              {/* 質問入力エリア */}
-              <div style={{ borderTop: '1px solid rgba(22, 101, 52, 0.1)', paddingTop: '20px' }}>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    style={{ flex: 1, borderRadius: '12px', border: '1px solid #bbf7d0' }}
-                    placeholder="コーチにさらに質問する..."
-                    value={question}
-                    onChange={(e) => setQuestion(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAskQuestion()}
-                  />
-                  <button 
-                    className="btn-primary" 
-                    style={{ width: 'auto', padding: '0 20px', borderRadius: '12px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
-                    onClick={handleAskQuestion}
-                    disabled={isAnswering || !question.trim()}
-                  >
-                    {isAnswering ? '分析中...' : 'AIプロコーチからの返信'}
-                  </button>
-                </div>
-                <p style={{ fontSize: '0.75rem', color: '#166534', opacity: 0.7, marginTop: '8px', textAlign: 'center' }}>
-                  日本代表プロ選手があなたの質問に答えてくれます
-                </p>
-              </div>
+              {!isParentView && (
+                  <div style={{ borderTop: '1px solid rgba(22, 101, 52, 0.1)', paddingTop: '20px' }}>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        style={{ flex: 1, borderRadius: '12px', border: '1px solid #bbf7d0' }}
+                        placeholder="コーチにさらに質問する..."
+                        value={question}
+                        onChange={(e) => setQuestion(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAskQuestion()}
+                      />
+                      <button 
+                        className="btn-primary" 
+                        style={{ width: 'auto', padding: '0 20px', borderRadius: '12px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+                        onClick={handleAskQuestion}
+                        disabled={isAnswering || !question.trim()}
+                      >
+                        {isAnswering ? '分析中...' : 'AIプロコーチからの返信'}
+                      </button>
+                    </div>
+                    <p style={{ fontSize: '0.75rem', color: '#166534', opacity: 0.7, marginTop: '8px', textAlign: 'center' }}>
+                      日本代表プロ選手があなたの質問に答えてくれます
+                    </p>
+                  </div>
+              )}
 
-              {/* YouTube動画提案 */}
               {aiKeyword && (
                   <div style={{ marginTop: '8px', borderTop: '1px solid rgba(22, 101, 52, 0.1)', paddingTop: '20px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
@@ -487,7 +510,6 @@ function MatchDetailContent() {
                       onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
                       onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                     >
-                      {/* 再生アイコンオーバーレイ */}
                       <div style={{ 
                         position: 'absolute', 
                         top: 0, 
@@ -543,7 +565,7 @@ function MatchDetailContent() {
             </p>
           )}
 
-          {aiAdvice && !isAnalyzing && !match.aiFixed && (
+          {aiAdvice && !isAnalyzing && !match.aiFixed && !isParentView && (
             <div style={{ marginTop: '24px', borderTop: '1px solid rgba(22, 101, 52, 0.1)', paddingTop: '16px', textAlign: 'center' }}>
               <button 
                 onClick={handleAnalyze}
@@ -564,7 +586,6 @@ function MatchDetailContent() {
               </button>
             </div>
           )}
-
         </div>
       </main>
     </>

@@ -3,15 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, Plus, Trash2 } from 'lucide-react';
-import { Match, getStorageMatchById, saveStorageMatch, Evaluation } from '@/lib/storage';
+import { Match, Evaluation } from '@/lib/storage';
+import { getMatchById, saveMatch } from '@/lib/db';
 
 export default function EditMatch() {
   const params = useParams();
   const router = useRouter();
   const matchId = Array.isArray(params.id) ? params.id[0] : params.id;
   
-  const [isClient, setIsClient] = useState(false);
   const [matchData, setMatchData] = useState<Match | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Form states
   const [type, setType] = useState<'match' | 'practice'>('match');
@@ -24,6 +25,7 @@ export default function EditMatch() {
   const [badPoints, setBadPoints] = useState('');
   const [badPointsDetail, setBadPointsDetail] = useState('');
   const [comment, setComment] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Evaluation states
   const [evaluation, setEvaluation] = useState<Evaluation>({
@@ -36,43 +38,50 @@ export default function EditMatch() {
   });
 
   useEffect(() => {
-    setIsClient(true);
-    if (matchId) {
-      const existingMatch = getStorageMatchById(matchId);
-      if (existingMatch) {
-        setMatchData(existingMatch);
-        setType(existingMatch.type || 'match');
-        setOpponent(existingMatch.opponent || '');
-        setPracticeName(existingMatch.practiceName || '');
-        
-        if (existingMatch.scores && existingMatch.scores.length > 0) {
-          setScores(existingMatch.scores.map(s => ({ my: s.my.toString(), opponent: s.opponent.toString() })));
-        } else if (existingMatch.myScore !== undefined && existingMatch.opponentScore !== undefined) {
-          // Legacy migration
-          setScores([{ my: existingMatch.myScore.toString(), opponent: existingMatch.opponentScore.toString() }]);
-        } else {
-          setScores([{ my: '', opponent: '' }]);
+    const fetchMatch = async () => {
+      setIsLoading(true);
+      try {
+        if (matchId) {
+          const existingMatch = await getMatchById(matchId);
+          if (existingMatch) {
+            setMatchData(existingMatch);
+            setType(existingMatch.type || 'match');
+            setOpponent(existingMatch.opponent || '');
+            setPracticeName(existingMatch.practiceName || '');
+            
+            if (existingMatch.scores && existingMatch.scores.length > 0) {
+              setScores(existingMatch.scores.map(s => ({ my: s.my.toString(), opponent: s.opponent.toString() })));
+            } else if (existingMatch.myScore !== undefined && existingMatch.opponentScore !== undefined) {
+              setScores([{ my: existingMatch.myScore.toString(), opponent: existingMatch.opponentScore.toString() }]);
+            } else {
+              setScores([{ my: '', opponent: '' }]);
+            }
+            
+            const d = new Date(existingMatch.date);
+            const yyyy = d.getFullYear();
+            const MM = String(d.getMonth() + 1).padStart(2, '0');
+            const DD = String(d.getDate()).padStart(2, '0');
+            const hh = String(d.getHours()).padStart(2, '0');
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            setDate(`${yyyy}-${MM}-${DD}T${hh}:${mm}`);
+            
+            setGoodPoints(existingMatch.goodPoints || '');
+            setGoodPointsDetail(existingMatch.goodPointsDetail || '');
+            setBadPoints(existingMatch.badPoints || '');
+            setBadPointsDetail(existingMatch.badPointsDetail || '');
+            setComment(existingMatch.comment || '');
+            if (existingMatch.evaluation) {
+              setEvaluation(existingMatch.evaluation);
+            }
+          }
         }
-        
-        // datetime-local support format
-        const d = new Date(existingMatch.date);
-        const yyyy = d.getFullYear();
-        const MM = String(d.getMonth() + 1).padStart(2, '0');
-        const DD = String(d.getDate()).padStart(2, '0');
-        const hh = String(d.getHours()).padStart(2, '0');
-        const mm = String(d.getMinutes()).padStart(2, '0');
-        setDate(`${yyyy}-${MM}-${DD}T${hh}:${mm}`);
-        
-        setGoodPoints(existingMatch.goodPoints || '');
-        setGoodPointsDetail(existingMatch.goodPointsDetail || '');
-        setBadPoints(existingMatch.badPoints || '');
-        setBadPointsDetail(existingMatch.badPointsDetail || '');
-        setComment(existingMatch.comment || '');
-        if (existingMatch.evaluation) {
-          setEvaluation(existingMatch.evaluation);
-        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoading(false);
       }
-    }
+    };
+    fetchMatch();
   }, [matchId]);
 
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>, key: keyof Evaluation) => {
@@ -97,12 +106,13 @@ export default function EditMatch() {
     setScores(newScores);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!matchData) return;
     if (type === 'match' && !opponent) return;
     if (type === 'practice' && !practiceName) return;
     
+    setIsSaving(true);
     const updatedMatch: Match = {
       ...matchData,
       type,
@@ -121,11 +131,18 @@ export default function EditMatch() {
       evaluation,
     };
     
-    saveStorageMatch(updatedMatch);
-    router.push('/');
+    try {
+      await saveMatch(updatedMatch);
+      router.push('/');
+    } catch(err) {
+      console.error(err);
+      alert('保存に失敗しました');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  if (!isClient) return null;
+  if (isLoading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
   if (!matchData) return <div style={{padding: '40px', textAlign: 'center'}}>試合データが見つかりません。</div>;
 
   const renderSlider = (key: keyof Evaluation, label: string, desc: string) => (
@@ -164,12 +181,12 @@ export default function EditMatch() {
 
   return (
     <>
-      <header className="page-header relative z-10">
+      <header className="page-header relative z-10 flex items-center justify-between">
         <button type="button" className="btn-icon" onClick={() => router.back()}>
           <ChevronLeft size={20} />
         </button>
-        <h1 className="page-title">試合を編集</h1>
-        <div style={{ width: 40 }} /> {/* Spacer */}
+        <h1 className="page-title m-0">試合を編集</h1>
+        <div style={{ width: 40 }} />
       </header>
       
       <main className="main-content" style={{ paddingBottom: '100px' }}>
@@ -349,8 +366,8 @@ export default function EditMatch() {
               <button type="button" className="btn btn-secondary flex-1" onClick={() => router.back()}>
                 キャンセル
               </button>
-              <button type="submit" className="btn btn-primary flex-1">
-                保存する
+              <button type="submit" disabled={isSaving} className="btn btn-primary flex-1" style={{ opacity: isSaving ? 0.7 : 1 }}>
+                {isSaving ? '保存中...' : '保存する'}
               </button>
             </div>
           </div>

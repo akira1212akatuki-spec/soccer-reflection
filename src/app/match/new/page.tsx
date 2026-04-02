@@ -1,23 +1,16 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, Save, Plus, Trash2 } from 'lucide-react';
-import { saveStorageMatch, Evaluation, User, getStorageUsers } from '@/lib/storage';
+import { Evaluation } from '@/lib/storage';
+import { saveMatch } from '@/lib/db';
+import { useAuth } from '@/contexts/AuthContext';
 
-function NewMatchForm() {
+export default function NewMatch() {
   const router = useRouter();
-  const [userId, setUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const active = localStorage.getItem('active_user_id');
-    if (!active) {
-      router.push('/');
-    } else {
-      setUserId(active);
-    }
-  }, [router]);
+  const { user } = useAuth();
 
   // Form states
   const [type, setType] = useState<'match' | 'practice'>('match');
@@ -35,6 +28,7 @@ function NewMatchForm() {
   const [badPoints, setBadPoints] = useState('');
   const [badPointsDetail, setBadPointsDetail] = useState('');
   const [comment, setComment] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Evaluation states
   const [evaluation, setEvaluation] = useState<Evaluation>({
@@ -65,15 +59,17 @@ function NewMatchForm() {
     setScores(newScores);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userId) return;
+    if (!user) return;
     if (type === 'match' && !opponent) return;
     if (type === 'practice' && !practiceName) return;
 
+    setIsSaving(true);
     const newMatch = {
       id: uuidv4(),
-      userId,
+      userId: user.uid,
+      userName: user.email?.split('@')[0] || "ユーザー",
       type,
       opponent: type === 'match' ? opponent : undefined,
       practiceName: type === 'practice' ? practiceName : undefined,
@@ -91,11 +87,17 @@ function NewMatchForm() {
       createdAt: Date.now(),
     };
 
-    saveStorageMatch(newMatch);
-    router.push('/');
+    try {
+      await saveMatch(newMatch as any);
+      router.push('/');
+    } catch (err) {
+      console.error(err);
+      alert('保存に失敗しました');
+      setIsSaving(false);
+    }
   };
 
-  if (!userId) return null;
+  if (!user) return null;
 
   const renderSlider = (key: keyof Evaluation, label: string, desc: string) => (
     <div className="evaluation-item" key={key}>
@@ -133,12 +135,12 @@ function NewMatchForm() {
 
   return (
     <>
-      <header className="page-header">
+      <header className="page-header flex items-center justify-between">
         <button className="btn-icon" onClick={() => router.push('/')}>
           <ChevronLeft size={20} />
         </button>
-        <h1 className="page-title">新規入力</h1>
-        <div style={{ width: 40 }} /> {/* Spacer */}
+        <h1 className="page-title m-0">新規入力</h1>
+        <div style={{ width: 40 }} />
       </header>
 
       <main className="main-content" style={{ paddingBottom: '40px' }}>
@@ -313,20 +315,12 @@ function NewMatchForm() {
             </div>
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ padding: '16px' }}>
+          <button type="submit" disabled={isSaving} className="btn btn-primary" style={{ padding: '16px', opacity: isSaving ? 0.7 : 1 }}>
             <Save size={20} />
-            保存する
+            {isSaving ? "保存中..." : "保存する"}
           </button>
         </form>
       </main>
     </>
-  );
-}
-
-export default function NewMatch() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <NewMatchForm />
-    </Suspense>
   );
 }

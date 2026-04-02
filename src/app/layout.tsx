@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 
 export const metadata: Metadata = {
   title: 'SoccerReflex',
@@ -17,9 +19,13 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
       </head>
       <body>
-        <div className="app-container">
-          {children}
-        </div>
+        <AuthProvider>
+          <div className="app-container">
+            <ProtectedRoute>
+              {children}
+            </ProtectedRoute>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );

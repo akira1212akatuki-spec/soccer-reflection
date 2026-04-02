@@ -3,27 +3,29 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { v4 as uuidv4 } from 'uuid';
-import { Trophy, Plus, LogOut, User as UserIcon, Trash2, Edit, ChevronDown, ChevronUp, Calendar as CalendarIcon, X } from 'lucide-react';
+import { Trophy, Plus, LogOut, Trash2, ChevronDown, ChevronUp, X, User as UserIcon } from 'lucide-react';
 import { isSameDay } from 'date-fns';
-import { User, getStorageUsers, saveStorageUser, getStorageMatches, Match, deleteStorageUser } from '@/lib/storage';
+import { Match, Evaluation } from '@/lib/storage';
+import { getMatches, deleteMatch } from '@/lib/db';
+import { useAuth } from '@/contexts/AuthContext';
+import { auth } from '@/lib/firebase';
 import MatchCard from '@/components/MatchCard';
 import MatchCalendar from '@/components/Calendar';
 import RadarChart from '@/components/RadarChart';
-import { Evaluation } from '@/lib/storage';
 
 export default function Home() {
   const router = useRouter();
+  const { user, loading } = useAuth();
   
   const [isClient, setIsClient] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  
-  // Login states
-  const [users, setUsers] = useState<User[]>([]);
-  const [newUserName, setNewUserName] = useState('');
-  
-  // Match states
   const [matches, setMatches] = useState<Match[]>([]);
+  const [isLoadingMatches, setIsLoadingMatches] = useState(true);
+  
+  // 親アカウント用の状態
+  const [isParent, setIsParent] = useState(false);
+  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
+  
+  // UI states
   const [isHistoryOpen, setIsHistoryOpen] = useState(true);
   const [showAllHistory, setShowAllHistory] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -40,45 +42,60 @@ export default function Home() {
 
   useEffect(() => {
     setIsClient(true);
-    const storedUsers = getStorageUsers();
-    setUsers(storedUsers);
-    
-    // Check if user was previously selected in this session
-    const activeUserId = localStorage.getItem('active_user_id');
-    if (activeUserId) {
-      const u = storedUsers.find(u => u.id === activeUserId);
-      if (u) {
-        handleLogin(u);
-      }
-    }
   }, []);
 
-  const handleCreateUser = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newUserName.trim()) return;
+  // データのフェッチ
+  const fetchMatches = async () => {
+    if (!user) return;
+    setIsLoadingMatches(true);
     
-    const newUser: User = {
-      id: uuidv4(),
-      name: newUserName.trim()
-    };
-    saveStorageUser(newUser);
-    setUsers([...users, newUser]);
-    setNewUserName('');
-    handleLogin(newUser);
+    // admin または parent という文字列がIDに入っていたら親とみなす
+    const isParentAccount = user.email?.includes('admin') || user.email?.includes('parent') || false;
+    setIsParent(isParentAccount);
+
+    // 親アカウントの場合は指定した子供ID（あるいは全部）を取得。子供の場合は自分のみ。
+    const targetUserId = isParentAccount ? selectedChildId : user.uid;
+    const filterId = targetUserId === 'all' ? undefined : targetUserId;
+
+    const data = await getMatches(filterId || undefined, isParentAccount && targetUserId === 'all');
+    setMatches(data);
+    setIsLoadingMatches(false);
   };
 
-  const handleLogin = (u: User) => {
-    setCurrentUser(u);
-    localStorage.setItem('active_user_id', u.id);
-    const m = getStorageMatches(u.id);
-    setMatches(m);
+  useEffect(() => {
+    if (user && !loading) {
+      fetchMatches();
+    }
+  }, [user, loading, selectedChildId]);
+
+  const handleLogout = async () => {
+    await auth.signOut();
+    router.push('/login');
   };
 
-  const handleLogout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem('active_user_id');
-    setMatches([]);
+  const handleDelete = async (id: string) => {
+    if (window.confirm('本当にこの振り返りを削除しますか？')) {
+      await deleteMatch(id);
+      setMatches(prev => prev.filter(m => m.id !== id));
+    }
   };
+
+  // 親用の「子供一覧」を生成（全データからuserIdのユニークリストを作る）
+  // 実際にはちゃんとしたユーザーテーブルを作るのが定石ですが、今回は簡易的に全マッチから抽出
+  const [allChildren, setAllChildren] = useState<{id: string, name: string}[]>([]);
+  
+  useEffect(() => {
+    if (isParent && matches.length > 0 && allChildren.length === 0) {
+      // 一度だけ全員のIDと名前のペアを抽出
+      const childMap = new Map<string, string>();
+      matches.forEach(m => {
+        // storageの仕様が変わって userName が無い場合は userId を使う
+        childMap.set(m.userId, (m as any).userName || '取得した選手');
+      });
+      const childrenList = Array.from(childMap.entries()).map(([id, name]) => ({id, name}));
+      setAllChildren(childrenList);
+    }
+  }, [matches, isParent]);
 
   // Compute filtered average
   let avgEvaluation: Evaluation | null = null;
@@ -109,109 +126,78 @@ export default function Home() {
     };
   }
 
-  if (!isClient) return null;
-
-  if (!currentUser) {
-    return (
-      <div className="user-selector">
-        <div className="logo-container">
-          <Trophy size={40} color="white" />
-        </div>
-        <div className="text-center mb-6">
-          <h1 className="page-title" style={{ fontSize: '2rem' }}>Soccer Reflex</h1>
-          <p className="form-label mt-4">試合記録をつける選手を選んでください</p>
-        </div>
-
-        <div className="glass-panel" style={{ width: '100%', maxWidth: '350px' }}>
-          {users.length > 0 && (
-            <div className="mb-6">
-              <p className="form-label mb-4">登録済み選手</p>
-              <div className="flex" style={{ flexDirection: 'column', gap: '8px' }}>
-                {users.map(u => (
-                  <div key={u.id} className="flex gap-2 w-full">
-                    <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'flex-start' }} onClick={() => handleLogin(u)}>
-                      <UserIcon size={18} />
-                      {u.name}
-                    </button>
-                    <button className="btn-icon" onClick={() => {
-                      if (window.confirm(`選手「${u.name}」とその記録をすべて削除しますか？`)) {
-                        deleteStorageUser(u.id);
-                        setUsers(prev => prev.filter(user => user.id !== u.id));
-                      }
-                    }}>
-                      <Trash2 size={18} className="icon-accent" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-            <p className="form-label mb-4">新しい選手を登録</p>
-            <form onSubmit={handleCreateUser} className="flex gap-2">
-              <input
-                type="text"
-                className="form-input flex-1"
-                placeholder="選手名"
-                value={newUserName}
-                onChange={e => setNewUserName(e.target.value)}
-              />
-              <button type="submit" className="btn btn-primary" style={{ width: 'auto', padding: '12px 20px', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                登録
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (!isClient || loading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
+  if (!user) return null; // ProtectedRouteが処理する
 
   const filteredMatchesByDate = selectedDate 
     ? matches.filter(m => isSameDay(new Date(m.date), selectedDate))
     : matches;
 
+  const currentUserName = user.email?.split('@')[0] || "ユーザー";
+
   return (
     <>
       <header className="page-header flex flex-col items-center gap-2" style={{ padding: '20px 16px' }}>
-        <h1 className="page-title">SoccerReflex</h1>
+        <div className="flex justify-between items-center w-full">
+            <h1 className="page-title text-xl m-0">SoccerReflex</h1>
+            <button 
+              className="btn-icon" 
+              onClick={handleLogout} 
+              aria-label="ログアウト"
+              style={{ padding: '6px' }}
+            >
+              <LogOut size={20} />
+            </button>
+        </div>
+        
         <div className="flex items-center gap-4 mt-2">
-          <span className="form-label" style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)' }}>{currentUser.name}</span>
-          <button 
-            className="btn-icon" 
-            onClick={handleLogout} 
-            aria-label="ログアウト"
-            style={{ 
-              border: '2px solid rgba(0,0,0,0.2)', 
-              borderRadius: '8px',
-              padding: '6px'
-            }}
-          >
-            <LogOut size={20} />
-          </button>
+            {!isParent ? (
+                <span className="form-label" style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                    {currentUserName} 選手の記録
+                </span>
+            ) : (
+                <div className="flex flex-col items-center">
+                    <span className="text-sm font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded-md mb-1">保護者アカウント</span>
+                    <select 
+                        className="form-input text-lg font-bold" 
+                        value={selectedChildId || 'all'} 
+                        onChange={(e) => setSelectedChildId(e.target.value === 'all' ? null : e.target.value)}
+                    >
+                        <option value="all">全員の記録を表示</option>
+                        {allChildren.map(c => (
+                            <option key={c.id} value={c.id}>{c.name} (ID: {c.id.substring(0,4)}...)</option>
+                        ))}
+                    </select>
+                </div>
+            )}
         </div>
       </header>
       
       <main className="main-content" style={{ paddingBottom: '100px' }}>
         <div className="flex flex-col gap-8 max-w-[800px] mx-auto" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
           
-          {/* 1. Calendar (NOW AT TOP) */}
           <div style={{ width: '100%' }}>
+            {/* カレンダーコンポーネント（現状のものを流用。userNameは適当な名前に。） */}
             <MatchCalendar 
               matches={matches} 
-              userName={currentUser.name} 
+              userName={isParent ? "選択中" : currentUserName} 
               selectedDate={selectedDate}
               onSelectDate={setSelectedDate}
             />
           </div>
 
-          {/* 2. Review List (Filtered by selectedDate) */}
-          {matches.length === 0 ? (
+          {isLoadingMatches ? (
+             <div className="text-center py-10 opacity-60">データを読み込み中...</div>
+          ) : matches.length === 0 ? (
             <div className="glass-panel empty-state">
               <Trophy size={48} className="icon-subtle" />
               <div>
                 <h3>まだ振り返り記録がありません</h3>
-                <p className="form-label mt-4">右下のボタンから最初の一歩を記録しましょう！</p>
+                {isParent ? (
+                    <p className="form-label mt-4">お子様が記録をつけるとここに表示されます。</p>
+                ) : (
+                    <p className="form-label mt-4">右下のボタンから最初の一歩を記録しましょう！</p>
+                )}
               </div>
             </div>
           ) : (
@@ -245,10 +231,8 @@ export default function Home() {
                   ) : (
                     (() => {
                       const sortedMatches = [...filteredMatchesByDate].sort((a, b) => b.createdAt - a.createdAt);
-                      // Only apply "latest 5" if NOT filtering by date
                       const displayedMatches = (showAllHistory || selectedDate) ? sortedMatches : sortedMatches.slice(0, 5);
                       
-                      // Group the displayed matches by month
                       const grouped = displayedMatches.reduce((acc: Record<string, Match[]>, m) => {
                         const d = new Date(m.date);
                         const key = `${d.getFullYear()}年${d.getMonth() + 1}月`;
@@ -279,13 +263,8 @@ export default function Home() {
                                     <MatchCard 
                                       key={m.id} 
                                       match={m} 
-                                      userName={currentUser.name} 
-                                      onDelete={(id) => {
-                                        import('@/lib/storage').then(mod => {
-                                          mod.deleteStorageMatch(id);
-                                          setMatches((prev: Match[]) => prev.filter(match => match.id !== id));
-                                        });
-                                      }} 
+                                      userName={isParent ? ((m as any).userName || "取得した選手") : currentUserName} 
+                                      onDelete={handleDelete} 
                                     />
                                   ))}
                                 </div>
@@ -321,7 +300,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* 3. Average Performance (KEEP AT BOTTOM) */}
           <div className="glass-panel">
             <h2 className="form-label mb-4" style={{fontSize: '1rem', color: 'var(--text-main)'}}>期間ごとの平均パフォーマンス</h2>
             <div className="flex gap-2 items-center mb-4">
@@ -336,19 +314,29 @@ export default function Home() {
             ) : (
               <div className="text-center text-muted" style={{padding: '40px 0'}}>この期間のデータはありません</div>
             )}
+            
+            {/* メニュー：マイグレーション導線 */}
+            <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+              <Link href="/migrate" className="text-blue-600 font-medium hover:underline text-sm flex items-center justify-center gap-2">
+                <Plus size={16}/> ローカルからのデータ引き継ぎを行う
+              </Link>
+            </div>
           </div>
         </div>
 
-        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 100 }}>
-          <Link href="/match/new" className="btn btn-primary" style={{
-            height: '56px', borderRadius: '28px', padding: '0 20px',
-            boxShadow: '0 10px 25px rgba(59, 130, 246, 0.4)',
-            display: 'flex', alignItems: 'center', gap: '6px'
-          }}>
-            <Plus size={24} />
-            <span style={{ fontWeight: 600, fontSize: '1rem' }}>新規入力</span>
-          </Link>
-        </div>
+        {/* 親アカウントのときは新規入力ボタンを隠す */}
+        {!isParent && (
+            <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 100 }}>
+            <Link href="/match/new" className="btn btn-primary" style={{
+                height: '56px', borderRadius: '28px', padding: '0 20px',
+                boxShadow: '0 10px 25px rgba(59, 130, 246, 0.4)',
+                display: 'flex', alignItems: 'center', gap: '6px'
+            }}>
+                <Plus size={24} />
+                <span style={{ fontWeight: 600, fontSize: '1rem' }}>新規入力</span>
+            </Link>
+            </div>
+        )}
       </main>
     </>
   );

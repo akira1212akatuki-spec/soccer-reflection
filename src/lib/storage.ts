@@ -27,6 +27,7 @@ export interface Match {
   aiKeyword?: string;
   aiQuestions?: { question: string; answer: string; persona?: string; timestamp: number }[];
   aiFixed?: boolean;
+  userName?: string;
   createdAt: number;
 }
 

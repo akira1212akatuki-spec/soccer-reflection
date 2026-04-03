@@ -3,12 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Trophy, Plus, LogOut, Trash2, ChevronDown, ChevronUp, X, User as UserIcon } from 'lucide-react';
+import { Trophy, Plus, LogOut, Trash2, ChevronDown, ChevronUp, X, User as UserIcon, UserMinus } from 'lucide-react';
 import { isSameDay } from 'date-fns';
 import { Match, Evaluation } from '@/lib/storage';
 import { getMatches, deleteMatch } from '@/lib/db';
 import { useAuth } from '@/contexts/AuthContext';
 import { auth } from '@/lib/firebase';
+import { deleteUser } from 'firebase/auth';
 import MatchCard from '@/components/MatchCard';
 import MatchCalendar from '@/components/Calendar';
 import RadarChart from '@/components/RadarChart';
@@ -71,6 +72,24 @@ export default function Home() {
   const handleLogout = async () => {
     await auth.signOut();
     router.push('/login');
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    if (window.confirm('このアカウントを削除していいですか？\n※この操作は取り消せません。')) {
+      try {
+        await deleteUser(user);
+        alert('アカウントを削除しました。');
+        router.push('/login');
+      } catch (error: any) {
+        console.error(error);
+        if (error.code === 'auth/requires-recent-login') {
+          alert('セキュリティのため、アカウントを削除するには一度ログアウトして再ログインしてください。');
+        } else {
+          alert('アカウントの削除に失敗しました。詳細: ' + error.message);
+        }
+      }
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -140,14 +159,26 @@ export default function Home() {
       <header className="page-header flex flex-col items-center gap-2" style={{ padding: '20px 16px' }}>
         <div className="flex justify-between items-center w-full">
             <h1 className="page-title text-xl m-0">SoccerReflex</h1>
-            <button 
-              className="btn-icon" 
-              onClick={handleLogout} 
-              aria-label="ログアウト"
-              style={{ padding: '6px' }}
-            >
-              <LogOut size={20} />
-            </button>
+            <div className="flex gap-2">
+              <button 
+                className="btn-icon" 
+                onClick={handleDeleteAccount} 
+                aria-label="アカウント削除"
+                title="アカウント削除"
+                style={{ padding: '6px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}
+              >
+                <UserMinus size={20} />
+              </button>
+              <button 
+                className="btn-icon" 
+                onClick={handleLogout} 
+                aria-label="ログアウト"
+                title="ログアウト"
+                style={{ padding: '6px' }}
+              >
+                <LogOut size={20} />
+              </button>
+            </div>
         </div>
         
         <div className="flex items-center gap-4 mt-2">

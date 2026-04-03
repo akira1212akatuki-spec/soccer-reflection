@@ -41,6 +41,8 @@ body {
   line-height: 1.5;
   font-size: 1.05rem; /* Slightly larger */
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 a {
@@ -51,11 +53,13 @@ a {
 /* Layout */
 .app-container {
   max-width: 600px;
+  width: 100%;
   margin: 0 auto;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   position: relative;
+  overflow-x: hidden;
 }
 
 .page-header {

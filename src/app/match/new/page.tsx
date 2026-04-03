@@ -66,17 +66,11 @@ export default function NewMatch() {
     if (type === 'practice' && !practiceName) return;
 
     setIsSaving(true);
-    const newMatch = {
+    const newMatch: any = {
       id: uuidv4(),
       userId: user.uid,
       userName: user.email?.split('@')[0] || "ユーザー",
       type,
-      opponent: type === 'match' ? opponent : undefined,
-      practiceName: type === 'practice' ? practiceName : undefined,
-      scores: type === 'match' ? scores.map(s => ({
-        my: s.my ? parseInt(s.my, 10) : 0,
-        opponent: s.opponent ? parseInt(s.opponent, 10) : 0
-      })) : undefined,
       date: new Date(date).toISOString(),
       goodPoints,
       goodPointsDetail,
@@ -86,6 +80,16 @@ export default function NewMatch() {
       evaluation,
       createdAt: Date.now(),
     };
+
+    if (type === 'match') {
+      newMatch.opponent = opponent;
+      newMatch.scores = scores.map(s => ({
+        my: s.my ? parseInt(s.my, 10) || 0 : 0,
+        opponent: s.opponent ? parseInt(s.opponent, 10) || 0 : 0
+      }));
+    } else {
+      newMatch.practiceName = practiceName;
+    }
 
     try {
       await saveMatch(newMatch as any);

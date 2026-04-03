@@ -55,12 +55,8 @@ export default function RootLayout({
                 observer.observe(document.documentElement, { childList: true, subtree: true });
                 
                 removeVercelStuff();
-                const interval = setInterval(removeVercelStuff, 500);
-                setTimeout(() => {
-                  clearInterval(interval);
-                  // 5秒後も念のため一度実行
-                  removeVercelStuff();
-                }, 10000);
+                // 永続的に1秒おきにチェック（念のため）
+                setInterval(removeVercelStuff, 1000);
               })();
             `
           }}

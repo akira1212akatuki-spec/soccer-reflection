@@ -240,7 +240,7 @@ export default function Home() {
                       onClick={() => setSelectedDate(null)}
                       className="flex items-center gap-1 px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-md text-xs font-medium text-slate-600 transition-colors"
                     >
-                      解除 <X size={12} />
+                      解除
                     </button>
                   )}
                 </div>

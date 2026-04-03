@@ -590,7 +590,12 @@ vercel-live-feedback,
 .vercel-toolbar,
 [data-vercel-toolbar],
 [id^="vercel-toolbar"],
-[class^="vercel-toolbar-"] {
+[class^="vercel-toolbar"],
+[data-vercel-live-feedback],
+[class*="vercel-toolbar"],
+[id*="vercel-toolbar"],
+va-toolbar,
+#__next-vercel-toolbar {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;

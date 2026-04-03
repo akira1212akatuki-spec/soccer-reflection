@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Trophy, Plus, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Trophy, Plus, ChevronDown, ChevronUp, X, UserMinus } from 'lucide-react';
 import { isSameDay } from 'date-fns';
 import { Match, Evaluation } from '@/lib/storage';
 import { getMatches, deleteMatch } from '@/lib/db';
@@ -160,7 +160,15 @@ export default function Home() {
         <div className="flex justify-between items-center w-full">
             <h1 className="page-title text-xl m-0">SoccerReflex</h1>
             <div className="flex gap-2">
-              {/* 誤操作防止のため、ヘッダーからログアウト・削除ボタンを削除 */}
+              <button 
+                className="btn-icon" 
+                onClick={handleDeleteAccount} 
+                aria-label="アカウント削除"
+                title="アカウント削除"
+                style={{ padding: '6px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}
+              >
+                <UserMinus size={20} />
+              </button>
             </div>
         </div>
         

@@ -107,3 +107,21 @@ export const calculateAverageEvaluationFromFirestore = async (userId: string, is
     captaincy: sum.captaincy / count,
   };
 };
+
+/**
+ * 特定のユーザーに紐づく全ての試合データを削除する
+ */
+export const deleteAllMatchesByUserId = async (userId: string): Promise<void> => {
+  try {
+    const matchesRef = collection(db, MATCHES_COLLECTION);
+    const q = query(matchesRef, where("userId", "==", userId));
+    const querySnapshot = await getDocs(q);
+    
+    // 全てのドキュメントを削除
+    const deletePromises = querySnapshot.docs.map((doc) => deleteDoc(doc.ref));
+    await Promise.all(deletePromises);
+  } catch (error) {
+    console.error("Error deleting user matches:", error);
+    throw error;
+  }
+};

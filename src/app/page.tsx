@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Trophy, Plus, ChevronDown, ChevronUp, X, UserMinus, Trash2, LogOut } from 'lucide-react';
 import { isSameDay } from 'date-fns';
 import { Match, Evaluation } from '@/lib/storage';
-import { getMatches, deleteMatch } from '@/lib/db';
+import { getMatches, deleteMatch, deleteAllMatchesByUserId } from '@/lib/db';
 import { useAuth } from '@/contexts/AuthContext';
 import { auth } from '@/lib/firebase';
 import { deleteUser } from 'firebase/auth';
@@ -83,7 +83,12 @@ export default function Home() {
   const confirmDeleteAccount = async () => {
     if (!user) return;
     try {
+      // 1. まずそのユーザーの全ての試合データを削除する
+      await deleteAllMatchesByUserId(user.uid);
+      
+      // 2. 次にアカウント自体を削除する
       await deleteUser(user);
+      
       alert('アカウントを削除しました。');
       router.push('/login');
     } catch (error: any) {

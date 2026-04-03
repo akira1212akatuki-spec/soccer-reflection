@@ -455,11 +455,11 @@ function MatchDetailContent() {
 
               {!isParentView && (
                   <div style={{ borderTop: '1px solid rgba(22, 101, 52, 0.1)', paddingTop: '20px' }}>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                       <input 
                         type="text" 
                         className="form-input" 
-                        style={{ flex: 1, borderRadius: '12px', border: '1px solid #bbf7d0' }}
+                        style={{ flex: '1 1 200px', borderRadius: '12px', border: '1px solid #bbf7d0', minHeight: '44px' }}
                         placeholder="コーチにさらに質問する..."
                         value={question}
                         onChange={(e) => setQuestion(e.target.value)}
@@ -467,7 +467,7 @@ function MatchDetailContent() {
                       />
                       <button 
                         className="btn-primary" 
-                        style={{ width: 'auto', padding: '0 20px', borderRadius: '12px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+                        style={{ flex: '1 1 auto', padding: '0 16px', height: '44px', borderRadius: '12px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
                         onClick={handleAskQuestion}
                         disabled={isAnswering || !question.trim()}
                       >

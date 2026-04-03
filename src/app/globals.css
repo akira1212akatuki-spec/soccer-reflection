@@ -585,6 +585,15 @@ input[type=range]:focus {
 }
 
 /* Hide Vercel Toolbar on mobile and desktop */
-#vercel-toolbar, vercel-live-feedback, .vercel-toolbar {
+#vercel-toolbar, 
+vercel-live-feedback, 
+.vercel-toolbar,
+[data-vercel-toolbar],
+[id^="vercel-toolbar"],
+[class^="vercel-toolbar-"] {
   display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: -9999 !important;
 }

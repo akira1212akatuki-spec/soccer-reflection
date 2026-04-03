@@ -592,13 +592,17 @@ vercel-live-feedback,
 [id^="vercel-toolbar"],
 [class^="vercel-toolbar"],
 [data-vercel-live-feedback],
+[data-vercel-feedback-button],
 [class*="vercel-toolbar"],
 [id*="vercel-toolbar"],
 va-toolbar,
+vercel-feedback-button,
 #__next-vercel-toolbar {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;
   z-index: -9999 !important;
+  width: 0 !important;
+  height: 0 !important;
 }

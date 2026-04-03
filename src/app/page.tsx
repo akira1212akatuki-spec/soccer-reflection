@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Trophy, Plus, ChevronDown, ChevronUp, X, UserMinus } from 'lucide-react';
+import { Trophy, Plus, ChevronDown, ChevronUp, X, UserMinus, Trash2 } from 'lucide-react';
 import { isSameDay } from 'date-fns';
 import { Match, Evaluation } from '@/lib/storage';
 import { getMatches, deleteMatch } from '@/lib/db';
@@ -30,6 +30,7 @@ export default function Home() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(true);
   const [showAllHistory, setShowAllHistory] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Date filter for average chart
   const [startDate, setStartDate] = useState(() => {
@@ -76,19 +77,24 @@ export default function Home() {
 
   const handleDeleteAccount = async () => {
     if (!user) return;
-    if (window.confirm('このアカウントを削除していいですか？\n※この操作は取り消せません。')) {
-      try {
-        await deleteUser(user);
-        alert('アカウントを削除しました。');
-        router.push('/login');
-      } catch (error: any) {
-        console.error(error);
-        if (error.code === 'auth/requires-recent-login') {
-          alert('セキュリティのため、アカウントを削除するには一度ログアウトして再ログインしてください。');
-        } else {
-          alert('アカウントの削除に失敗しました。詳細: ' + error.message);
-        }
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteAccount = async () => {
+    if (!user) return;
+    try {
+      await deleteUser(user);
+      alert('アカウントを削除しました。');
+      router.push('/login');
+    } catch (error: any) {
+      console.error(error);
+      if (error.code === 'auth/requires-recent-login') {
+        alert('セキュリティのため、アカウントを削除するには一度ログアウトして再ログインしてください。');
+      } else {
+        alert('アカウントの削除に失敗しました。詳細: ' + error.message);
       }
+    } finally {
+      setShowDeleteModal(false);
     }
   };
 
@@ -360,6 +366,52 @@ export default function Home() {
             </div>
         )}
       </main>
+
+      {/* アカウント削除確認モーダル */}
+      {showDeleteModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+          padding: '24px'
+        }}>
+          <div className="glass-panel" style={{
+            maxWidth: '400px', width: '100%', textAlign: 'center',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)', padding: '32px'
+          }}>
+            <div style={{
+              width: '64px', height: '64px', borderRadius: '50%', background: '#fee2e2',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 20px', color: '#ef4444'
+            }}>
+              <Trash2 size={32} />
+            </div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '12px', color: '#0f172a' }}>
+              アカウント削除の確認
+            </h3>
+            <p style={{ color: '#64748b', fontSize: '1rem', marginBottom: '32px', lineHeight: 1.6 }}>
+              このアカウントを削除していいですか？<br/>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#ef4444' }}>※この操作は取り消せません。</span>
+            </p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                className="btn btn-secondary" 
+                style={{ flex: 1, padding: '12px' }}
+                onClick={() => setShowDeleteModal(false)}
+              >
+                キャンセル
+              </button>
+              <button 
+                className="btn btn-primary" 
+                style={{ flex: 1, padding: '12px', backgroundColor: '#ef4444', backgroundImage: 'none', boxShadow: 'none' }}
+                onClick={confirmDeleteAccount}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Trophy, Plus, ChevronDown, ChevronUp, X, UserMinus, Trash2 } from 'lucide-react';
+import { Trophy, Plus, ChevronDown, ChevronUp, X, UserMinus, Trash2, LogOut } from 'lucide-react';
 import { isSameDay } from 'date-fns';
 import { Match, Evaluation } from '@/lib/storage';
 import { getMatches, deleteMatch } from '@/lib/db';
@@ -174,6 +174,15 @@ export default function Home() {
                 style={{ padding: '6px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}
               >
                 <UserMinus size={20} />
+              </button>
+              <button 
+                className="btn-icon" 
+                onClick={handleLogout} 
+                aria-label="ログアウト"
+                title="ログアウト"
+                style={{ padding: '6px' }}
+              >
+                <LogOut size={20} />
               </button>
             </div>
         </div>

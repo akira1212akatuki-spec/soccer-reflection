@@ -31,6 +31,7 @@ export default function Home() {
   const [showAllHistory, setShowAllHistory] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showPlayerDataDeleteModal, setShowPlayerDataDeleteModal] = useState(false);
 
   // Date filter for average chart
   const [startDate, setStartDate] = useState(() => {
@@ -107,6 +108,31 @@ export default function Home() {
     if (window.confirm('本当にこの振り返りを削除しますか？')) {
       await deleteMatch(id);
       setMatches(prev => prev.filter(m => m.id !== id));
+    }
+  };
+
+  const handleDeleteAllMatchesForSelectedChild = async () => {
+    if (!isParent || !selectedChildId) return;
+    setShowPlayerDataDeleteModal(true);
+  };
+
+  const confirmDeletePlayerData = async () => {
+    if (!isParent || !selectedChildId) return;
+    try {
+      await deleteAllMatchesByUserId(selectedChildId);
+      alert('選手の全データを削除しました。');
+      
+      // リストを更新
+      await fetchMatches();
+      // 選択を解除
+      setSelectedChildId(null);
+      // 子供リストをクリア（再計算を促す）
+      setAllChildren([]);
+    } catch (error) {
+      console.error(error);
+      alert('データの削除に失敗しました。');
+    } finally {
+      setShowPlayerDataDeleteModal(false);
     }
   };
 
@@ -200,16 +226,29 @@ export default function Home() {
             ) : (
                 <div className="flex flex-col items-center">
                     <span className="text-sm font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded-md mb-1">保護者アカウント</span>
-                    <select 
-                        className="form-input text-lg font-bold" 
-                        value={selectedChildId || 'all'} 
-                        onChange={(e) => setSelectedChildId(e.target.value === 'all' ? null : e.target.value)}
-                    >
-                        <option value="all">全員の記録を表示</option>
-                        {allChildren.map(c => (
-                            <option key={c.id} value={c.id}>{c.name} (ID: {c.id.substring(0,4)}...)</option>
-                        ))}
-                    </select>
+                    <div className="flex items-center gap-2">
+                        <select 
+                            className="form-input text-lg font-bold" 
+                            value={selectedChildId || 'all'} 
+                            onChange={(e) => setSelectedChildId(e.target.value === 'all' ? null : e.target.value)}
+                        >
+                            <option value="all">全員の記録を表示</option>
+                            {allChildren.map(c => (
+                                <option key={c.id} value={c.id}>{c.name} (ID: {c.id.substring(0,4)}...)</option>
+                            ))}
+                        </select>
+                        
+                        {selectedChildId && (
+                            <button 
+                                className="btn-icon" 
+                                onClick={handleDeleteAllMatchesForSelectedChild}
+                                title="この選手の全データを削除"
+                                style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)', backgroundColor: 'rgba(239, 68, 68, 0.05)' }}
+                            >
+                                <Trash2 size={20} />
+                            </button>
+                        )}
+                    </div>
                 </div>
             )}
         </div>
@@ -421,6 +460,52 @@ export default function Home() {
                 onClick={confirmDeleteAccount}
               >
                 OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 選手データ一括削除確認モーダル（保護者用） */}
+      {showPlayerDataDeleteModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+          padding: '24px'
+        }}>
+          <div className="glass-panel" style={{
+            maxWidth: '400px', width: '100%', textAlign: 'center',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)', padding: '32px'
+          }}>
+            <div style={{
+              width: '64px', height: '64px', borderRadius: '50%', background: '#fee2e2',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 20px', color: '#ef4444'
+            }}>
+              <Trash2 size={32} />
+            </div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '12px', color: '#0f172a' }}>
+              選手データの全削除
+            </h3>
+            <p style={{ color: '#64748b', fontSize: '1rem', marginBottom: '32px', lineHeight: 1.6 }}>
+              選択した選手の**全ての試合・練習記録**を削除していいですか？<br/>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#ef4444' }}>※すでにアカウントがない選手のデータ掃除に利用してください。</span>
+            </p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                className="btn btn-secondary" 
+                style={{ flex: 1, padding: '12px' }}
+                onClick={() => setShowPlayerDataDeleteModal(false)}
+              >
+                キャンセル
+              </button>
+              <button 
+                className="btn btn-primary" 
+                style={{ flex: 1, padding: '12px', backgroundColor: '#ef4444', backgroundImage: 'none', boxShadow: 'none' }}
+                onClick={confirmDeletePlayerData}
+              >
+                削除する
               </button>
             </div>
           </div>

@@ -24,25 +24,43 @@ export default function RootLayout({
               (function() {
                 function removeVercelStuff() {
                   const selectors = [
-                    '#vercel-toolbar',
                     'vercel-live-feedback',
-                    '.vercel-toolbar',
+                    'va-toolbar',
+                    '#vercel-toolbar',
                     '[data-vercel-toolbar]',
                     '[data-vercel-feedback-button]',
-                    'va-toolbar',
+                    '[data-vercel-live-feedback]',
                     'vercel-feedback-button',
                     '#__next-vercel-toolbar'
                   ];
+                  
+                  // 通常のDOMから削除
                   selectors.forEach(s => {
-                    const elements = document.querySelectorAll(s);
-                    elements.forEach(el => el.remove());
+                    document.querySelectorAll(s).forEach(el => el.remove());
+                  });
+
+                  // Shadow DOMの中も探索して削除
+                  const allElements = document.querySelectorAll('*');
+                  allElements.forEach(el => {
+                    if (el.shadowRoot) {
+                      selectors.forEach(s => {
+                        el.shadowRoot.querySelectorAll(s).forEach(subEl => subEl.remove());
+                      });
+                    }
                   });
                 }
-                // 初回実行
+
+                // 監視を強化
+                const observer = new MutationObserver(removeVercelStuff);
+                observer.observe(document.documentElement, { childList: true, subtree: true });
+                
                 removeVercelStuff();
-                // 動的な生成に対応するため数回実行
-                const interval = setInterval(removeVercelStuff, 1000);
-                setTimeout(() => clearInterval(interval), 5000);
+                const interval = setInterval(removeVercelStuff, 500);
+                setTimeout(() => {
+                  clearInterval(interval);
+                  // 5秒後も念のため一度実行
+                  removeVercelStuff();
+                }, 10000);
               })();
             `
           }}

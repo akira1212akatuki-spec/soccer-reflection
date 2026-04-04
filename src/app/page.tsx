@@ -25,6 +25,7 @@ export default function Home() {
   // 親アカウント用の状態
   const [isParent, setIsParent] = useState(false);
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
+  const [allChildren, setAllChildren] = useState<{id: string, name: string}[]>([]);
   
   // UI states
   const [isHistoryOpen, setIsHistoryOpen] = useState(true);
@@ -71,11 +72,22 @@ export default function Home() {
     const isParentAccount = user.email?.includes('admin') || user.email?.includes('parent') || false;
     setIsParent(isParentAccount);
 
+    // 親アカウントかつ子供リストがまだ空の場合は、全データからリストを構築
+    if (isParentAccount && allChildren.length === 0) {
+      const allData = await getMatches(undefined, true);
+      const childMap = new Map<string, string>();
+      allData.forEach(m => {
+        childMap.set(m.userId, (m as any).userName || '取得した選手');
+      });
+      const childrenList = Array.from(childMap.entries()).map(([id, name]) => ({id, name}));
+      setAllChildren(childrenList);
+    }
+
     // 親アカウントの場合は指定した子供ID（あるいは全部）を取得。子供の場合は自分のみ。
     const targetUserId = isParentAccount ? selectedChildId : user.uid;
-    const filterId = targetUserId === 'all' ? undefined : targetUserId;
+    const filterId = (targetUserId === 'all' || !targetUserId) ? undefined : targetUserId;
 
-    const data = await getMatches(filterId || undefined, isParentAccount && targetUserId === 'all');
+    const data = await getMatches(filterId || undefined, isParentAccount && (targetUserId === 'all' || !targetUserId));
     setMatches(data);
     setIsLoadingMatches(false);
   };
@@ -153,20 +165,9 @@ export default function Home() {
 
   // 親用の「子供一覧」を生成（全データからuserIdのユニークリストを作る）
   // 実際にはちゃんとしたユーザーテーブルを作るのが定石ですが、今回は簡易的に全マッチから抽出
-  const [allChildren, setAllChildren] = useState<{id: string, name: string}[]>([]);
-  
-  useEffect(() => {
-    if (isParent && matches.length > 0 && allChildren.length === 0) {
-      // 一度だけ全員のIDと名前のペアを抽出
-      const childMap = new Map<string, string>();
-      matches.forEach(m => {
-        // storageの仕様が変わって userName が無い場合は userId を使う
-        childMap.set(m.userId, (m as any).userName || '取得した選手');
-      });
-      const childrenList = Array.from(childMap.entries()).map(([id, name]) => ({id, name}));
-      setAllChildren(childrenList);
-    }
-  }, [matches, isParent]);
+  // 親用の「子供一覧」を生成
+  // 以前は matches から抽出していましたが、現在は fetchMatches 内で全データから抽出し allChildren にセットしています
+  // これにより、フィルタリング中でも全員をプルダウンに表示し続けられます
 
   // Compute filtered average
   let avgEvaluation: Evaluation | null = null;

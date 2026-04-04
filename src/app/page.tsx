@@ -45,7 +45,22 @@ export default function Home() {
 
   useEffect(() => {
     setIsClient(true);
+    // ストレージから子供選択状態を復旧
+    const savedChildId = sessionStorage.getItem('selectedChildId');
+    if (savedChildId) {
+      setSelectedChildId(savedChildId);
+    }
   }, []);
+
+  // 子供選択状態が変更されたら保存
+  useEffect(() => {
+    if (selectedChildId) {
+      sessionStorage.setItem('selectedChildId', selectedChildId);
+    } else {
+      // 「全員を表示」の場合は削除
+      sessionStorage.removeItem('selectedChildId');
+    }
+  }, [selectedChildId]);
 
   // データのフェッチ
   const fetchMatches = async () => {

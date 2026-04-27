@@ -17,6 +17,7 @@ import {
 } from '@/lib/db';
 import { useAuth } from '@/contexts/AuthContext';
 import RadarChart from '@/components/RadarChart';
+import { EXP_KEYS, EXP_LABELS, calcLevel, calcProgressExp, EarnedExps } from '@/lib/xpCalculator';
 
 function MatchDetailContent() {
   const router = useRouter();
@@ -377,6 +378,22 @@ function MatchDetailContent() {
             </div>
           </div>
         </div>
+
+        {/* この記録で獲得したEXP */}
+        {match.earnedExps && (
+          <div className="rpg-panel" style={{ fontSize: '0.78rem' }}>
+            <div className="rpg-title" style={{ fontSize: '0.8rem' }}>⭐ この記録で獲得したEXP ⭐</div>
+            {EXP_KEYS.map(key => {
+              const earned = (match.earnedExps as EarnedExps)[key] ?? 0;
+              return (
+                <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                  <span style={{ color: '#7ae7c7' }}>{EXP_LABELS[key]}</span>
+                  <span style={{ color: '#ffe066' }}>+{earned} EXP</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         <div className="glass-panel" style={{ padding: '24px 16px' }}>
           <h2 className="form-label text-center mb-4" style={{ color: 'var(--text-main)', fontSize: '1.25rem' }}>パフォーマンス分析</h2>

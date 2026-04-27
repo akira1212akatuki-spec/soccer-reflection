@@ -1,4 +1,156 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
+
+/* ===== RPG / ドラクエ風ステータスUI ===== */
+.rpg-panel {
+  background: #000;
+  color: #fff;
+  border: 4px double white;
+  padding: 12px 16px;
+  border-radius: 4px;
+  font-family: 'DotGothic16', monospace;
+  font-size: 0.85rem;
+  line-height: 1.8;
+  position: relative;
+  overflow: hidden;
+}
+
+.rpg-panel::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgba(255,255,255,0.15);
+  pointer-events: none;
+  border-radius: 2px;
+}
+
+.rpg-title {
+  text-align: center;
+  font-size: 0.95rem;
+  letter-spacing: 0.1em;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.3);
+  margin-bottom: 10px;
+  color: #ffe066;
+}
+
+.rpg-overall {
+  color: #ffe066;
+  font-size: 1rem;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.rpg-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+
+.rpg-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rpg-label {
+  font-size: 0.8rem;
+  color: #7ae7c7;
+}
+
+.rpg-lv {
+  font-size: 0.8rem;
+  color: #fff;
+}
+
+.rpg-bar-wrap {
+  width: 100%;
+  height: 8px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.rpg-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #ffe066, #ff9f43);
+  transition: width 0.8s ease;
+}
+
+.rpg-exp-text {
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.5);
+  text-align: right;
+}
+
+/* Level Up Modal */
+.levelup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 24px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.levelup-box {
+  background: #000;
+  border: 4px double #ffe066;
+  color: #fff;
+  font-family: 'DotGothic16', monospace;
+  padding: 32px 24px;
+  text-align: center;
+  max-width: 360px;
+  width: 100%;
+  animation: slideUp 0.4s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.levelup-title {
+  font-size: 2rem;
+  color: #ffe066;
+  letter-spacing: 0.2em;
+  margin-bottom: 16px;
+  text-shadow: 0 0 20px rgba(255, 224, 102, 0.8);
+}
+
+.levelup-item {
+  color: #7ae7c7;
+  font-size: 0.85rem;
+  margin: 6px 0;
+}
+
+.levelup-close {
+  margin-top: 24px;
+  background: transparent;
+  border: 2px solid #ffe066;
+  color: #ffe066;
+  font-family: 'DotGothic16', monospace;
+  padding: 8px 24px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.levelup-close:hover {
+  background: #ffe066;
+  color: #000;
+}
+
 
 :root {
   --bg-color: #f8fafc;

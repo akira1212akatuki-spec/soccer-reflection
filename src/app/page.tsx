@@ -6,13 +6,15 @@ import { useRouter } from 'next/navigation';
 import { Trophy, Plus, ChevronDown, ChevronUp, X, UserMinus, Trash2, LogOut } from 'lucide-react';
 import { isSameDay } from 'date-fns';
 import { Match, Evaluation } from '@/lib/storage';
-import { getMatches, deleteMatch, deleteAllMatchesByUserId } from '@/lib/db';
+import { getMatches, deleteMatch, deleteAllMatchesByUserId, getUserProfile, UserProfile } from '@/lib/db';
 import { useAuth } from '@/contexts/AuthContext';
 import { auth } from '@/lib/firebase';
 import { deleteUser } from 'firebase/auth';
 import MatchCard from '@/components/MatchCard';
 import MatchCalendar from '@/components/Calendar';
 import RadarChart from '@/components/RadarChart';
+import StatusPanel from '@/components/StatusPanel';
+import { EarnedExps, emptyExps } from '@/lib/xpCalculator';
 
 export default function Home() {
   const router = useRouter();
@@ -27,6 +29,9 @@ export default function Home() {
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const [allChildren, setAllChildren] = useState<{id: string, name: string}[]>([]);
   
+  // XP / Profile
+  const [totalExps, setTotalExps] = useState<EarnedExps>(emptyExps());
+
   // UI states
   const [isHistoryOpen, setIsHistoryOpen] = useState(true);
   const [showAllHistory, setShowAllHistory] = useState(false);
@@ -71,6 +76,14 @@ export default function Home() {
     // admin または parent という文字列がIDに入っていたら親とみなす
     const isParentAccount = user.email?.includes('admin') || user.email?.includes('parent') || false;
     setIsParent(isParentAccount);
+
+    // 選手アカウントの場合はプロフィール（EXP）を取得
+    if (!isParentAccount) {
+      const profile = await getUserProfile(user.uid);
+      if (profile?.totalExps) {
+        setTotalExps(profile.totalExps);
+      }
+    }
 
     // 親アカウントかつ子供リストがまだ空の場合は、全データからリストを構築
     if (isParentAccount && allChildren.length === 0) {
@@ -269,6 +282,13 @@ export default function Home() {
             )}
         </div>
       </header>
+
+      {/* 選手アカウントのみステータスパネルを表示 */}
+      {!isParent && (
+        <div style={{ padding: '0 24px', marginBottom: '-8px' }}>
+          <StatusPanel totalExps={totalExps} />
+        </div>
+      )}
       
       <main className="main-content" style={{ paddingBottom: '100px' }}>
         <div className="flex flex-col gap-8 max-w-[800px] mx-auto" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>

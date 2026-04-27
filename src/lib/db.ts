@@ -5,12 +5,46 @@ import {
   getDocs, 
   getDoc, 
   setDoc, 
+  updateDoc,
   deleteDoc, 
   query, 
   where, 
   orderBy 
 } from "firebase/firestore";
 import { Match, Evaluation } from "./storage"; // 型を再利用
+import { EarnedExps, emptyExps } from "./xpCalculator";
+
+// ===== プロフィール (EXP合計) =====
+
+const PROFILES_COLLECTION = "profiles";
+
+export interface UserProfile {
+  userId: string;
+  totalExps: EarnedExps;
+}
+
+export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
+  try {
+    const profileDoc = await getDoc(doc(db, PROFILES_COLLECTION, userId));
+    if (profileDoc.exists()) {
+      return profileDoc.data() as UserProfile;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error getting user profile:", error);
+    return null;
+  }
+};
+
+export const updateUserProfile = async (userId: string, totalExps: EarnedExps): Promise<void> => {
+  try {
+    const profileRef = doc(db, PROFILES_COLLECTION, userId);
+    await setDoc(profileRef, { userId, totalExps }, { merge: true });
+  } catch (error) {
+    console.error("Error updating user profile:", error);
+    throw error;
+  }
+};
 
 const MATCHES_COLLECTION = "soccer_matches";
 

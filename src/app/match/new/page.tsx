@@ -6,7 +6,17 @@ import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, Save, Plus, Trash2 } from 'lucide-react';
 import { Evaluation } from '@/lib/storage';
 import { saveMatch } from '@/lib/db';
+import { getUserProfile, updateUserProfile } from '@/lib/db';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  calcEarnedExps,
+  mergeExps,
+  emptyExps,
+  detectLevelUps,
+  EarnedExps,
+  ExpKey,
+} from '@/lib/xpCalculator';
+import LevelUpModal from '@/components/LevelUpModal';
 
 export default function NewMatch() {
   const router = useRouter();
@@ -19,7 +29,6 @@ export default function NewMatch() {
   const [scores, setScores] = useState<{my: string, opponent: string}[]>([{my: '', opponent: ''}]);
   const [date, setDate] = useState(() => {
     const now = new Date();
-    // HTML5 datetime-local format: YYYY-MM-DDThh:mm
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     return now.toISOString().slice(0, 16);
   });
@@ -29,6 +38,12 @@ export default function NewMatch() {
   const [badPointsDetail, setBadPointsDetail] = useState('');
   const [comment, setComment] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [savingStep, setSavingStep] = useState('');
+
+  // LevelUp modal state
+  const [levelUps, setLevelUps] = useState<{ key: ExpKey; prevLevel: number; nextLevel: number }[]>([]);
+  const [showLevelUpModal, setShowLevelUpModal] = useState(false);
+  const [savedMatchId, setSavedMatchId] = useState<string | null>(null);
 
   // Evaluation states
   const [evaluation, setEvaluation] = useState<Evaluation>({
@@ -66,10 +81,12 @@ export default function NewMatch() {
     if (type === 'practice' && !practiceName) return;
 
     setIsSaving(true);
+    const matchId = uuidv4();
+
     const newMatch: any = {
-      id: uuidv4(),
+      id: matchId,
       userId: user.uid,
-      userName: user.email?.split('@')[0] || "ユーザー",
+      userName: user.email?.split('@')[0] || 'ユーザー',
       type,
       date: new Date(date).toISOString(),
       goodPoints,
@@ -85,20 +102,70 @@ export default function NewMatch() {
       newMatch.opponent = opponent;
       newMatch.scores = scores.map(s => ({
         my: s.my ? parseInt(s.my, 10) || 0 : 0,
-        opponent: s.opponent ? parseInt(s.opponent, 10) || 0 : 0
+        opponent: s.opponent ? parseInt(s.opponent, 10) || 0 : 0,
       }));
     } else {
       newMatch.practiceName = practiceName;
     }
 
     try {
+      // Step 1: EXP計算
+      setSavingStep('EXPを計算中...');
+      const earned = calcEarnedExps(newMatch);
+      newMatch.earnedExps = earned;
+
+      // Step 2: プロフィール取得 & LvUp判定
+      const profile = await getUserProfile(user.uid);
+      const prevExps: EarnedExps = profile?.totalExps ?? emptyExps();
+      const nextExps = mergeExps(prevExps, earned);
+      const levelUpItems = detectLevelUps(prevExps, nextExps);
+
+      // Step 3: AI分析を自動実行
+      setSavingStep('AIコーチが分析中...');
+      try {
+        const allMatchesRes = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ matchData: newMatch, history: [] }),
+        });
+        if (allMatchesRes.ok) {
+          const aiData = await allMatchesRes.json();
+          if (!aiData.error) {
+            newMatch.aiAdvice = aiData.advice;
+            newMatch.aiKeyword = aiData.keyword;
+            newMatch.aiFixed = false;
+          }
+        }
+      } catch (aiErr) {
+        console.warn('AI分析に失敗しましたが、記録は保存します。', aiErr);
+      }
+
+      // Step 4: 記録を保存
+      setSavingStep('記録を保存中...');
       await saveMatch(newMatch as any);
-      router.push('/');
+
+      // Step 5: totalExps を更新
+      await updateUserProfile(user.uid, nextExps);
+
+      // Step 6: LvUpがあればモーダル表示、なければホームへ
+      setSavedMatchId(matchId);
+      if (levelUpItems.length > 0) {
+        setLevelUps(levelUpItems);
+        setShowLevelUpModal(true);
+      } else {
+        router.push('/');
+      }
     } catch (err) {
       console.error(err);
       alert('保存に失敗しました');
       setIsSaving(false);
+      setSavingStep('');
     }
+  };
+
+  const handleLevelUpClose = () => {
+    setShowLevelUpModal(false);
+    router.push('/');
   };
 
   if (!user) return null;
@@ -127,8 +194,8 @@ export default function NewMatch() {
         />
         <div className="range-ticks">
           {[1, 2, 3, 4, 5, 6, 7].map((num) => (
-            <div 
-              key={num} 
+            <div
+              key={num}
               className={`range-tick ${evaluation[key] >= num ? 'active' : ''}`}
             />
           ))}
@@ -139,6 +206,11 @@ export default function NewMatch() {
 
   return (
     <>
+      {/* LevelUp Modal */}
+      {showLevelUpModal && (
+        <LevelUpModal levelUps={levelUps} onClose={handleLevelUpClose} />
+      )}
+
       <header className="page-header flex items-center justify-between">
         <button className="btn-icon" onClick={() => router.push('/')}>
           <ChevronLeft size={20} />
@@ -151,14 +223,14 @@ export default function NewMatch() {
         <form onSubmit={handleSubmit}>
           <div className="glass-panel mb-6">
             <div className="type-switcher">
-              <button 
+              <button
                 type="button"
                 className={`type-switcher-btn ${type === 'match' ? 'active' : 'inactive'}`}
                 onClick={() => setType('match')}
               >
                 試合
               </button>
-              <button 
+              <button
                 type="button"
                 className={`type-switcher-btn ${type === 'practice' ? 'active' : 'inactive'}`}
                 onClick={() => setType('practice')}
@@ -168,49 +240,49 @@ export default function NewMatch() {
             </div>
 
             <h2 className="form-label mb-4" style={{ fontSize: '1rem', color: 'var(--text-main)' }}>基本情報</h2>
-            
+
             {type === 'match' ? (
               <>
                 <div className="form-group">
                   <label className="form-label">対戦チーム *</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
+                  <input
+                    type="text"
+                    className="form-input"
                     required={type === 'match'}
-                    value={opponent} 
-                    onChange={e => setOpponent(e.target.value)} 
-                    placeholder="例: FC東京" 
+                    value={opponent}
+                    onChange={e => setOpponent(e.target.value)}
+                    placeholder="例: FC東京"
                   />
                 </div>
-                
+
                 <div className="form-group">
                   <label className="form-label">スコア</label>
                   <div className="flex flex-col gap-3">
                     {scores.map((score, index) => (
                       <div key={index} className="flex gap-2 items-center">
-                        <input 
-                          type="number" 
+                        <input
+                          type="number"
                           min="0"
-                          className="form-input" 
+                          className="form-input"
                           style={{width: '80px', textAlign: 'center'}}
-                          value={score.my} 
-                          onChange={e => updateScore(index, 'my', e.target.value)} 
-                          placeholder="自" 
+                          value={score.my}
+                          onChange={e => updateScore(index, 'my', e.target.value)}
+                          placeholder="自"
                         />
                         <span style={{fontWeight: 'bold', color: 'var(--text-muted)'}}>-</span>
-                        <input 
-                          type="number" 
+                        <input
+                          type="number"
                           min="0"
-                          className="form-input" 
+                          className="form-input"
                           style={{width: '80px', textAlign: 'center'}}
-                          value={score.opponent} 
-                          onChange={e => updateScore(index, 'opponent', e.target.value)} 
-                          placeholder="相手" 
+                          value={score.opponent}
+                          onChange={e => updateScore(index, 'opponent', e.target.value)}
+                          placeholder="相手"
                         />
                         {scores.length > 1 && (
-                          <button 
-                            type="button" 
-                            className="btn-icon" 
+                          <button
+                            type="button"
+                            className="btn-icon"
                             onClick={() => removeScore(index)}
                             style={{ padding: '4px', color: 'var(--accent-color)' }}
                           >
@@ -219,9 +291,9 @@ export default function NewMatch() {
                         )}
                       </div>
                     ))}
-                    <button 
-                      type="button" 
-                      className="btn btn-secondary" 
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
                       onClick={addScore}
                       style={{ width: 'fit-content', padding: '8px 12px', fontSize: '0.85rem', marginTop: '4px' }}
                     >
@@ -234,75 +306,75 @@ export default function NewMatch() {
             ) : (
               <div className="form-group">
                 <label className="form-label">練習名（スクールなど） *</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
+                <input
+                  type="text"
+                  className="form-input"
                   required={type === 'practice'}
-                  value={practiceName} 
-                  onChange={e => setPracticeName(e.target.value)} 
-                  placeholder="例: サッカースクール / 個人練習" 
+                  value={practiceName}
+                  onChange={e => setPracticeName(e.target.value)}
+                  placeholder="例: サッカースクール / 個人練習"
                 />
               </div>
             )}
 
             <div className="form-group">
               <label className="form-label">試合日時 *</label>
-              <input 
-                type="datetime-local" 
-                className="form-input" 
-                required 
-                value={date} 
-                onChange={e => setDate(e.target.value)} 
+              <input
+                type="datetime-local"
+                className="form-input"
+                required
+                value={date}
+                onChange={e => setDate(e.target.value)}
               />
             </div>
 
             <div className="form-group">
               <label className="form-label">良かった点</label>
-              <textarea 
-                className="form-textarea" 
-                value={goodPoints} 
-                onChange={e => setGoodPoints(e.target.value)} 
-                placeholder="良かった点や成功したプレー" 
+              <textarea
+                className="form-textarea"
+                value={goodPoints}
+                onChange={e => setGoodPoints(e.target.value)}
+                placeholder="良かった点や成功したプレー"
               />
               <div className="mt-2">
                 <label className="form-label" style={{ fontSize: '0.8rem', opacity: 0.8 }}>詳細：良かったプレーは？なぜうまくいったと思う？</label>
-                <textarea 
-                  className="form-textarea" 
+                <textarea
+                  className="form-textarea"
                   style={{ minHeight: '60px', width: '100%' }}
-                  value={goodPointsDetail} 
-                  onChange={e => setGoodPointsDetail(e.target.value)} 
-                  placeholder="具体的に記入" 
+                  value={goodPointsDetail}
+                  onChange={e => setGoodPointsDetail(e.target.value)}
+                  placeholder="具体的に記入"
                 />
               </div>
             </div>
-            
+
             <div className="form-group mb-0">
               <label className="form-label">改善点</label>
-              <textarea 
-                className="form-textarea" 
-                value={badPoints} 
-                onChange={e => setBadPoints(e.target.value)} 
-                placeholder="次に向けての課題や反省点" 
+              <textarea
+                className="form-textarea"
+                value={badPoints}
+                onChange={e => setBadPoints(e.target.value)}
+                placeholder="次に向けての課題や反省点"
               />
               <div className="mt-2">
                 <label className="form-label" style={{ fontSize: '0.8rem', opacity: 0.8 }}>詳細：次はどうすればよくなる？具体的に何を意識する？</label>
-                <textarea 
-                  className="form-textarea" 
+                <textarea
+                  className="form-textarea"
                   style={{ minHeight: '60px', width: '100%' }}
-                  value={badPointsDetail} 
-                  onChange={e => setBadPointsDetail(e.target.value)} 
-                  placeholder="具体的に記入" 
+                  value={badPointsDetail}
+                  onChange={e => setBadPointsDetail(e.target.value)}
+                  placeholder="具体的に記入"
                 />
               </div>
             </div>
 
             <div className="form-group mt-4 mb-0">
               <label className="form-label">感想・メモ</label>
-              <textarea 
-                className="form-textarea" 
-                value={comment} 
-                onChange={e => setComment(e.target.value)} 
-                placeholder="その他の感想やメモ" 
+              <textarea
+                className="form-textarea"
+                value={comment}
+                onChange={e => setComment(e.target.value)}
+                placeholder="その他の感想やメモ"
               />
             </div>
           </div>
@@ -319,9 +391,23 @@ export default function NewMatch() {
             </div>
           </div>
 
-          <button type="submit" disabled={isSaving} className="btn btn-primary" style={{ padding: '16px', opacity: isSaving ? 0.7 : 1 }}>
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="btn btn-primary"
+            style={{ padding: '16px', opacity: isSaving ? 0.7 : 1 }}
+          >
             <Save size={20} />
-            {isSaving ? "保存中..." : "保存する"}
+            {isSaving ? (
+              <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                <span>保存中...</span>
+                {savingStep && (
+                  <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>{savingStep}</span>
+                )}
+              </span>
+            ) : (
+              '保存する'
+            )}
           </button>
         </form>
       </main>

@@ -28,6 +28,7 @@ export interface Match {
   aiQuestions?: { question: string; answer: string; persona?: string; timestamp: number }[];
   aiFixed?: boolean;
   userName?: string;
+  earnedExps?: import('./xpCalculator').EarnedExps;
   createdAt: number;
 }
 

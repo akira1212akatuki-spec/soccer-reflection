@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { matchData, question, history, chatHistory } = body;
+    const { matchData, question, history, chatHistory, levelUpItems } = body;
 
     const apiKey = process.env.GEMINI_API_KEY;
 
@@ -24,6 +24,11 @@ export async function POST(request: Request) {
     const chatHistoryText = chatHistory && chatHistory.length > 0
       ? chatHistory.map((ch: any) => `質問: 「${ch.question}」\n回答: 「${ch.answer}」`).join('\n\n')
       : 'なし';
+
+    // レベルアップ時の冒頭に労いを入れるかどうか
+    const levelUpIntro = levelUpItems && levelUpItems.length > 0
+      ? `なお、この記録を通じて「${levelUpItems.map((item: any) => `${item.label} Lv.${item.nextLevel}`).join('・')}」にレベルアップしました。回答の冒頭1文目だけ、「（項目名）のレベルアップ、すごいな！」のように、自然な形で一言だけ触れてください。`
+      : '';
 
     // プロンプトの作成
     const prompt = `
@@ -53,7 +58,7 @@ ${chatHistoryText}
 2. 上記の「これまでの会話履歴」がある場合は、必ずその流れを踏まえて自然につながるように回答してください。同じことを繰り返さず、会話を発展させてください。
 3. 質問が技術面（シュート、トラップ、ドリブルなど）に関するものなら、体の使い方や足の置き方、ボールの触り方など、具体的な動作のコツを中学生でもイメージしやすく教えてください。
 4. 質問が戦術面（ポジショニング、パスコース、プレスなど）に関するものなら、「どこを見るか」「いつ動くか」「なぜそうするのか」を具体的な場面を例に出して教えてください。
-5. 今回の記録（良かった点・改善点やAIコーチの分析）は回答を考える参考にしますが、冒頭での「〇〇戦お疲れ！」「〇〇が良かったね」のような全体評価や前置きは【一切不要】です。全体の分析はすでにAIコーチが行っているため、すぐに「質問の件だけど、」や「〇〇の件だね、」と、質問へのダイレクトな回答から始めてください。
+5. 今回の記録（良かった点・改善点やAIコーチの分析）は回答を考える参考にしますが、冒頭での「〇〇戦お疲れ！」「〇〇が良かったね」のような全体評価や前置きは【一切不要】です。全体の分析はすでにAIコーチが行っているため、すぐに「質問の件だけど、」や「〇〇の件だね、」と、質問へのダイレクトな回答から始めてください。ただし、以下のレベルアップ情報がある場合のみ、例外として冒頭1文に限り労いを含めてください: ${levelUpIntro}
 6. 口調は「〜だよ」「〜だね」「〜してみよう」といった、フレンドリーな語りかけにしてください。
 7. 文字数は200文字〜300文字程度。
 

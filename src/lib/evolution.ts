@@ -12,77 +12,77 @@ export const EVOLUTION_STAGES: EvolutionStage[] = [
     name: 'ピヨボール（初期）', 
     image: '/images/evo/lv_1.png',
     description: '卵の殻に入ったひよこ',
-    soccerElement: 'なし（純粋な成長前）'
+    soccerElement: 'まずはボールと友達になろう！'
   },
   { 
     minLevel: 10, 
     name: 'ピヨボール（成長）', 
     image: '/images/evo/lv_2.png',
     description: '少し大きくなったひよこ',
-    soccerElement: 'なし（純粋な成長前）'
+    soccerElement: '少し体つきが変わってきたね。基礎の大切さを忘れないでね'
   },
   { 
     minLevel: 20, 
     name: '中間形態', 
     image: '/images/evo/lv_3.png',
     description: 'ひよことニワトリの間',
-    soccerElement: 'ボールを頭に乗せる'
+    soccerElement: 'おっ、ボールを扱えるようになってきたじゃないか'
   },
   { 
     minLevel: 30, 
     name: 'ニワトリ（初級）', 
     image: '/images/evo/lv_4.png',
     description: '若いニワトリ',
-    soccerElement: 'ユニフォーム、ゴール前'
+    soccerElement: 'ユニフォームが似合ってきたぞ。試合を意識しろ'
   },
   { 
     minLevel: 40, 
     name: 'ニワトリ（上級）', 
     image: '/images/evo/lv_5.png',
     description: '逞しいニワトリ',
-    soccerElement: '戦術ボード、キャプテンマーク'
+    soccerElement: '戦術を理解し始めたな。チームの核になれ'
   },
   { 
     minLevel: 50, 
     name: 'クジャク', 
     image: '/images/evo/lv_6.png',
     description: '華やかな羽',
-    soccerElement: '黄金のボール、優雅なドリブル'
+    soccerElement: '華麗なプレーで観客を魅了しろ。自信を持て'
   },
   { 
     minLevel: 60, 
     name: 'イーグル（隊長）', 
     image: '/images/evo/lv_7.png',
     description: '鋭い眼光の鷲',
-    soccerElement: '崖の上のピッチ、守備の要'
+    soccerElement: 'お前がDFラインの要だ。後ろから仲間を鼓舞しろ'
   },
   { 
     minLevel: 70, 
     name: 'イーグル（伝説）', 
     image: '/images/evo/lv_8.png',
     description: '翼を広げた黄金の鷲',
-    soccerElement: '炎のボール、優勝カップ'
+    soccerElement: 'そのカップは努力の証だ。だが満足するのはまだ早い'
   },
   { 
     minLevel: 80, 
     name: 'サンダーバード', 
     image: '/images/evo/lv_9.png',
     description: '電撃を纏う鳥',
-    soccerElement: '雷光のシュート'
+    soccerElement: 'そのスピード、まさに稲妻だ。相手を置き去りにしろ'
   },
   { 
     minLevel: 90, 
     name: '鳳凰（ホウオウ）', 
     image: '/images/evo/lv_10.png',
     description: '東洋の神獣',
-    soccerElement: '古代の祠、聖なるボール'
+    soccerElement: '聖域に達したな。お前のプレーはもはや芸術だ'
   },
   { 
     minLevel: 100, 
     name: '不死鳥（究極体）', 
     image: '/images/evo/lv_11.png',
     description: '宇宙・深淵のオーラ',
-    soccerElement: '宇宙フィールド、完全体'
+    soccerElement: '伝説の完成だ。お前が日本のサッカーの未来を創るんだ'
   },
 ];
 

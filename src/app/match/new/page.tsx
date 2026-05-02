@@ -134,10 +134,18 @@ export default function NewMatch() {
             newMatch.aiAdvice = aiData.advice;
             newMatch.aiKeyword = aiData.keyword;
             newMatch.aiFixed = false;
+          } else {
+            console.warn('AI分析エラー:', aiData.error);
+            alert('AIコーチの分析に失敗しました。記録の保存は続行します。\n理由: ' + aiData.error);
           }
+        } else {
+          const errData = await allMatchesRes.json();
+          console.warn('AI分析に失敗しました', errData);
+          alert('AIコーチの分析に失敗しました。記録の保存は続行します。');
         }
       } catch (aiErr) {
         console.warn('AI分析に失敗しましたが、記録は保存します。', aiErr);
+        alert('AIコーチの分析中にエラーが発生しました。記録の保存は続行します。');
       }
 
       // Step 4: 記録を保存

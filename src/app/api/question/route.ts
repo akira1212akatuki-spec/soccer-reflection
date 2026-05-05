@@ -69,25 +69,41 @@ ${chatHistoryText}
 }
 `;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }]
-        }]
-      })
-    });
+    // 最新モデルを優先し、失敗したらフォールバック
+    const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+    let response: Response | null = null;
+    let lastError: any = null;
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      return NextResponse.json({ 
-        error: 'AIとの通信に失敗しました。',
-        details: errorData 
-      }, { status: response.status });
+    for (const modelName of models) {
+      try {
+        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+          })
+        });
+        if (response.ok) {
+          console.log(`Gemini model used: ${modelName}`);
+          break;
+        }
+        lastError = await response.json().catch(() => null);
+        console.warn(`Model ${modelName} failed:`, lastError?.error?.message);
+        response = null;
+      } catch (fetchErr) {
+        console.warn(`Model ${modelName} fetch error:`, fetchErr);
+        lastError = fetchErr;
+        response = null;
+      }
     }
+
+    if (!response) {
+      const errorMessage = lastError?.error?.message || lastError?.message || '全モデルへの接続に失敗しました。';
+      return NextResponse.json({ 
+        error: `AIとの通信に失敗しました: ${errorMessage}` 
+      }, { status: 503 });
+    }
+
 
     const data = await response.json();
     const text = data.candidates[0].content.parts[0].text;

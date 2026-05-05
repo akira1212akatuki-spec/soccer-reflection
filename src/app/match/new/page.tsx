@@ -120,7 +120,7 @@ export default function NewMatch() {
       const nextExps = mergeExps(prevExps, earned);
       const levelUpItems = detectLevelUps(prevExps, nextExps);
 
-      // Step 3: AI分析を自動実行
+      // Step 3: AI分析を自動実行（失敗しても保存は必ず続行）
       setSavingStep('AIコーチが分析中...');
       try {
         const allMatchesRes = await fetch('/api/analyze', {
@@ -135,17 +135,17 @@ export default function NewMatch() {
             newMatch.aiKeyword = aiData.keyword;
             newMatch.aiFixed = false;
           } else {
-            console.warn('AI分析エラー:', aiData.error);
-            alert('AIコーチの分析に失敗しました。記録の保存は続行します。\n理由: ' + aiData.error);
+            // AI分析エラーはコンソールに記録するだけ（alertでブロックしない）
+            console.warn('AI分析エラー（記録は保存されます）:', aiData.error);
           }
         } else {
-          const errData = await allMatchesRes.json();
-          console.warn('AI分析に失敗しました', errData);
-          alert('AIコーチの分析に失敗しました。記録の保存は続行します。');
+          // HTTPエラーはコンソールに記録するだけ（alertでブロックしない）
+          const errData = await allMatchesRes.json().catch(() => ({}));
+          console.warn('AI分析HTTP失敗（記録は保存されます）', errData);
         }
       } catch (aiErr) {
-        console.warn('AI分析に失敗しましたが、記録は保存します。', aiErr);
-        alert('AIコーチの分析中にエラーが発生しました。記録の保存は続行します。');
+        // ネットワークエラーもコンソールに記録するだけ（alertでブロックしない）
+        console.warn('AI分析ネットワークエラー（記録は保存されます）:', aiErr);
       }
 
       // Step 4: 記録を保存

@@ -146,7 +146,7 @@ export default function MonthlyReport() {
               <div className="glass-panel mb-6">
                 <h3 className="text-md font-bold mb-4 flex items-center gap-2"><Star size={18} className="text-yellow-400"/> 今月の平均ステータス</h3>
                 <div style={{ height: '300px', width: '100%', position: 'relative', left: '-5%' }}>
-                  <RadarChart evaluation={avgEvaluation} />
+                  <RadarChart currentEvaluation={avgEvaluation} averageEvaluation={avgEvaluation} />
                 </div>
               </div>
             )}

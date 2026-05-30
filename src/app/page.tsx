@@ -38,6 +38,8 @@ export default function Home() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showPlayerDataDeleteModal, setShowPlayerDataDeleteModal] = useState(false);
+  const [showMonthlyPopup, setShowMonthlyPopup] = useState(false);
+  const [lastMonthLabel, setLastMonthLabel] = useState('');
 
   // Date filter for average chart
   const [startDate, setStartDate] = useState(() => {
@@ -57,6 +59,23 @@ export default function Home() {
       setSelectedChildId(savedChildId);
     }
   }, []);
+
+  // 月間レポートのポップアップ判定
+  useEffect(() => {
+    if (user && !loading && !isParent) {
+      const d = new Date();
+      const currentMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const lastMonthDate = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+      const lastMonthDisplay = `${lastMonthDate.getMonth() + 1}月`;
+      
+      const seenMonth = localStorage.getItem(`seen_monthly_popup_${user.uid}`);
+      if (seenMonth !== currentMonth) {
+        setLastMonthLabel(lastMonthDisplay);
+        setShowMonthlyPopup(true);
+        localStorage.setItem(`seen_monthly_popup_${user.uid}`, currentMonth);
+      }
+    }
+  }, [user, loading, isParent]);
 
   // 子供選択状態が変更されたら保存
   useEffect(() => {
@@ -418,7 +437,17 @@ export default function Home() {
           )}
 
           <div className="glass-panel">
-            <h2 className="form-label mb-4" style={{fontSize: '1rem', color: 'var(--text-main)'}}>期間ごとの平均パフォーマンス</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="form-label mb-0" style={{fontSize: '1rem', color: 'var(--text-main)'}}>期間ごとの平均パフォーマンス</h2>
+              <button 
+                className="btn btn-secondary" 
+                style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                onClick={() => router.push('/report')}
+              >
+                <Trophy size={16} />
+                月間レポート
+              </button>
+            </div>
             <div className="flex gap-2 items-center mb-4">
               <input type="date" className="form-input" style={{flex: 1, padding: '8px', fontSize: '0.875rem'}} value={startDate} onChange={e => setStartDate(e.target.value)} />
               <span>〜</span>
@@ -542,6 +571,56 @@ export default function Home() {
                 onClick={confirmDeletePlayerData}
               >
                 削除する
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 月間レポートポップアップ */}
+      {showMonthlyPopup && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+          padding: '24px'
+        }}>
+          <div className="glass-panel" style={{
+            maxWidth: '400px', width: '100%', textAlign: 'center',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)', padding: '32px',
+            border: '1px solid rgba(255,215,0,0.3)',
+            background: 'linear-gradient(135deg, rgba(25,30,40,0.9) 0%, rgba(30,40,50,0.9) 100%)'
+          }}>
+            <div style={{
+              width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(255,215,0,0.2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 20px', color: '#fbbf24'
+            }}>
+              <Trophy size={32} />
+            </div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '12px', color: '#f8fafc' }}>
+              {lastMonthLabel}の月間レポートが届いています！
+            </h3>
+            <p style={{ color: '#94a3b8', fontSize: '0.95rem', marginBottom: '24px', lineHeight: 1.6 }}>
+              先月の頑張りを振り返って、今月の目標を立てましょう。AIコーチからの総評も確認できます。
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <button 
+                className="btn btn-primary" 
+                style={{ width: '100%', padding: '14px' }}
+                onClick={() => {
+                  setShowMonthlyPopup(false);
+                  router.push('/report');
+                }}
+              >
+                レポートを見る
+              </button>
+              <button 
+                className="btn btn-secondary" 
+                style={{ width: '100%', padding: '12px', background: 'transparent', boxShadow: 'none', color: '#94a3b8' }}
+                onClick={() => setShowMonthlyPopup(false)}
+              >
+                あとで見る
               </button>
             </div>
           </div>

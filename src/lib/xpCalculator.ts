@@ -57,10 +57,10 @@ export function calcProgressExp(totalExp: number): { current: number; needed: nu
 
 /**
  * 1回の記録で獲得するEXPを計算。
- * 全6項目共通の文章量ボーナス + 各項目の自己評価 + 逆転の分析ボーナス。
+ * 連続入力ボーナス、詳細入力（文字数）ボーナス、全項目入力ボーナスなどを含む。
  */
-export function calcEarnedExps(match: Match): EarnedExps {
-  // A. 文章量チェック
+export function calcEarnedExps(match: Match, weeklyCount: number = 0): EarnedExps {
+  // A. 文章量チェック（案C：1.0 + (文字数/1000)*1.5 倍、最大2.5倍）
   const totalTextLength =
     (match.goodPoints?.length ?? 0) +
     (match.goodPointsDetail?.length ?? 0) +
@@ -68,11 +68,27 @@ export function calcEarnedExps(match: Match): EarnedExps {
     (match.badPointsDetail?.length ?? 0) +
     (match.comment?.length ?? 0);
 
-  let textBonus = 0;
-  if (totalTextLength >= 100) {
-    textBonus = 50;
-  } else if (totalTextLength >= 30) {
-    textBonus = 20;
+  const textMultiplier = Math.min(2.5, 1.0 + (totalTextLength / 1000) * 1.5);
+
+  // 全項目入力ボーナス（良かった点、改善点、次の目標 が全て入力されている場合）
+  const hasAllFields = 
+    (match.goodPoints?.trim().length ?? 0) > 0 &&
+    (match.badPoints?.trim().length ?? 0) > 0 &&
+    (match.comment?.trim().length ?? 0) > 0;
+  
+  // 各項目に一律+5ポイント（6項目で計30ポイント）
+  const allFieldsBonusPerItem = hasAllFields ? 5 : 0;
+
+  // 連続入力ボーナス（週の入力回数に応じた倍率）
+  let streakMultiplier = 1.0;
+  if (weeklyCount >= 6) {
+    streakMultiplier = 2.0;
+  } else if (weeklyCount === 5) {
+    streakMultiplier = 1.7;
+  } else if (weeklyCount === 4) {
+    streakMultiplier = 1.5;
+  } else if (weeklyCount >= 3) {
+    streakMultiplier = 1.2;
   }
 
   // 逆転分析ボーナスチェック用テキスト
@@ -109,7 +125,9 @@ export function calcEarnedExps(match: Match): EarnedExps {
       }
     }
 
-    result[key] = textBonus + evalBonus + reverseBonus;
+    // ベースの経験値を算出し、各種倍率をかける
+    const baseExp = evalBonus + reverseBonus + allFieldsBonusPerItem;
+    result[key] = Math.round(baseExp * textMultiplier * streakMultiplier);
   }
 
   return result;

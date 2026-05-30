@@ -15,7 +15,10 @@ import {
   detectLevelUps,
   EarnedExps,
   ExpKey,
+  EXP_KEYS,
+  EXP_LABELS
 } from '@/lib/xpCalculator';
+import { getStorageMatches } from '@/lib/storage';
 import LevelUpModal from '@/components/LevelUpModal';
 
 export default function NewMatch() {
@@ -44,6 +47,10 @@ export default function NewMatch() {
   const [levelUps, setLevelUps] = useState<{ key: ExpKey; prevLevel: number; nextLevel: number }[]>([]);
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   const [savedMatchId, setSavedMatchId] = useState<string | null>(null);
+
+  // Result popup state
+  const [showResultModal, setShowResultModal] = useState(false);
+  const [resultData, setResultData] = useState<{earned: EarnedExps, weeklyCount: number, aiAdvice: string | null} | null>(null);
 
   // Evaluation states
   const [evaluation, setEvaluation] = useState<Evaluation>({
@@ -109,9 +116,25 @@ export default function NewMatch() {
     }
 
     try {
-      // Step 1: EXP計算
+      // Step 1: 今週の入力回数を計算してEXP計算
       setSavingStep('EXPを計算中...');
-      const earned = calcEarnedExps(newMatch);
+      const matches = getStorageMatches(user.uid);
+      const now = new Date();
+      const currentDay = now.getDay(); // 0:Sun, 1:Mon, ... 6:Sat
+      const distanceToMonday = currentDay === 0 ? 6 : currentDay - 1;
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - distanceToMonday);
+      monday.setHours(0, 0, 0, 0);
+
+      let weeklyCount = 1; // 今回の分
+      matches.forEach(m => {
+        const mDate = new Date(m.createdAt);
+        if (mDate >= monday && mDate <= now) {
+          weeklyCount++;
+        }
+      });
+
+      const earned = calcEarnedExps(newMatch, weeklyCount);
       newMatch.earnedExps = earned;
 
       // Step 2: プロフィール取得 & LvUp判定
@@ -155,14 +178,15 @@ export default function NewMatch() {
       // Step 5: totalExps を更新
       await updateUserProfile(user.uid, nextExps);
 
-      // Step 6: LvUpがあればモーダル表示、なければホームへ
+      // Step 6: リザルトモーダルの表示（閉じた後にLvUp判定へ進む）
       setSavedMatchId(matchId);
-      if (levelUpItems.length > 0) {
-        setLevelUps(levelUpItems);
-        setShowLevelUpModal(true);
-      } else {
-        router.push('/');
-      }
+      setResultData({
+        earned,
+        weeklyCount,
+        aiAdvice: newMatch.aiAdvice || null
+      });
+      setShowResultModal(true);
+      
     } catch (err) {
       console.error(err);
       alert('保存に失敗しました');
@@ -214,6 +238,45 @@ export default function NewMatch() {
 
   return (
     <>
+      {/* Result Modal */}
+      {showResultModal && resultData && (
+        <div className="modal-overlay" style={{zIndex: 100}}>
+          <div className="glass-panel" style={{maxWidth: '400px', width: '90%', margin: '0 auto', position: 'relative'}}>
+            <h2 className="text-xl font-bold mb-4 text-center" style={{color: 'var(--text-main)'}}>振り返り完了！</h2>
+            <div className="mb-4 text-center">
+              <p style={{fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '8px'}}>今週 {resultData.weeklyCount} 回目の入力です！</p>
+              <div style={{display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px', marginTop: '12px'}}>
+                {EXP_KEYS.map(key => resultData.earned[key] > 0 && (
+                  <span key={key} style={{background: 'var(--primary-color)', color: 'white', padding: '4px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold'}}>
+                    {EXP_LABELS[key]}: +{resultData.earned[key]}
+                  </span>
+                ))}
+              </div>
+            </div>
+            {resultData.aiAdvice && (
+              <div style={{background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', marginBottom: '24px'}}>
+                <h3 style={{fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '8px', color: 'var(--accent-color)'}}>AIコーチからのアドバイス</h3>
+                <p style={{fontSize: '0.85rem', lineHeight: '1.6', color: 'var(--text-main)', whiteSpace: 'pre-wrap'}}>{resultData.aiAdvice}</p>
+              </div>
+            )}
+            <button 
+              className="btn btn-primary w-full"
+              style={{padding: '12px'}}
+              onClick={() => {
+                setShowResultModal(false);
+                if (levelUps.length > 0) {
+                  setShowLevelUpModal(true);
+                } else {
+                  router.push('/');
+                }
+              }}
+            >
+              次へ
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* LevelUp Modal */}
       {showLevelUpModal && (
         <LevelUpModal levelUps={levelUps} onClose={handleLevelUpClose} />
@@ -377,12 +440,12 @@ export default function NewMatch() {
             </div>
 
             <div className="form-group mt-4 mb-0">
-              <label className="form-label">感想・メモ</label>
+              <label className="form-label">次の目標・メモ</label>
               <textarea
                 className="form-textarea"
                 value={comment}
                 onChange={e => setComment(e.target.value)}
-                placeholder="その他の感想やメモ"
+                placeholder="次に向けての目標や、その他の感想"
               />
             </div>
           </div>

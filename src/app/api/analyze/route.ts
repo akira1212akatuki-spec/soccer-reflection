@@ -30,6 +30,11 @@ export async function POST(request: Request) {
 あなたは世界トップクラスのプロサッカーコーチです。
 提供された「今回の記録」を分析し、さらに「過去の振り返り履歴」と比較して、選手の成長や課題の傾向（癖や改善の兆しなど）をプロの視点で鋭く、かつ【中学生でも理解できる分かりやすい言葉（丁寧な敬語：です・ます調）】でアドバイスしてください。
 
+【重要な前提条件】
+・選手の名前は「${matchData.userName || 'あなた'}」です。アドバイスの際は選手名（〇〇選手）で語りかけてください。
+・対戦相手（または練習名）は「${matchData.opponent || matchData.practiceName}」です。
+・絶対に、対戦相手の名前を選手の名前として混同しないでください。
+
 【今回の記録】
 種類: ${matchData.type === 'match' ? '試合' : '練習'}
 対象: ${matchData.opponent || matchData.practiceName}

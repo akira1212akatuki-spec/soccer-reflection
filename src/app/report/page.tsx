@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Calendar, Trophy, Star, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { getStorageMatches, Match, Evaluation } from '@/lib/storage';
+import { Match, Evaluation } from '@/lib/storage';
+import { getMatches } from '@/lib/db';
 import RadarChart from '@/components/RadarChart';
 
 export default function MonthlyReport() {
@@ -25,7 +26,7 @@ export default function MonthlyReport() {
     
     const fetchReport = async () => {
       setLoading(true);
-      const matches = getStorageMatches(user.uid);
+      const matches = await getMatches(user.uid);
       
       // 対象月でフィルタ
       const filtered = matches.filter(m => {

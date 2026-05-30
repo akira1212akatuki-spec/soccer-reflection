@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, Save, Plus, Trash2 } from 'lucide-react';
 import { Evaluation } from '@/lib/storage';
-import { saveMatch } from '@/lib/db';
-import { getUserProfile, updateUserProfile } from '@/lib/db';
+import { saveMatch, getMatches, getUserProfile, updateUserProfile } from '@/lib/db';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   calcEarnedExps,
@@ -18,7 +17,6 @@ import {
   EXP_KEYS,
   EXP_LABELS
 } from '@/lib/xpCalculator';
-import { getStorageMatches } from '@/lib/storage';
 import LevelUpModal from '@/components/LevelUpModal';
 
 export default function NewMatch() {
@@ -118,7 +116,7 @@ export default function NewMatch() {
     try {
       // Step 1: 今週の入力回数を計算してEXP計算
       setSavingStep('EXPを計算中...');
-      const matches = getStorageMatches(user.uid);
+      const matches = await getMatches(user.uid);
       const now = new Date();
       const currentDay = now.getDay(); // 0:Sun, 1:Mon, ... 6:Sat
       const distanceToMonday = currentDay === 0 ? 6 : currentDay - 1;

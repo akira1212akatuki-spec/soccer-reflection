@@ -371,10 +371,12 @@ function MatchDetailContent() {
               )}
             </div>
             <div style={{ padding: '16px', background: 'rgba(0,0,0,0.03)', borderRadius: '8px', border: '1px solid var(--surface-border)' }}>
-              <h3 className="form-label mb-2" style={{ color: 'var(--text-main)' }}>感想・メモ</h3>
-              <p style={{ whiteSpace: 'pre-wrap', fontSize: '0.9375rem', lineHeight: 1.6 }}>
-                {match.comment || '未入力'}
-              </p>
+              {match.comment && (
+                <div className="mb-4">
+                  <h3 className="form-label mb-2" style={{ color: 'var(--text-main)' }}>次の目標・メモ</h3>
+                  <p className="text-sm bg-white/5 p-4 rounded-lg leading-relaxed whitespace-pre-wrap">{match.comment}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

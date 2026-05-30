@@ -339,12 +339,12 @@ export default function EditMatch() {
             </div>
 
             <div className="form-group mt-4 mb-0">
-              <label className="form-label">感想・メモ</label>
+              <label className="form-label">次の目標・メモ</label>
               <textarea 
                 className="form-textarea" 
                 value={comment} 
                 onChange={e => setComment(e.target.value)} 
-                placeholder="その他の感想やメモ" 
+                placeholder="次に向けての目標や、その他の感想" 
               />
             </div>
           </div>

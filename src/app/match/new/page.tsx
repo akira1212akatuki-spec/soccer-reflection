@@ -171,10 +171,29 @@ export default function NewMatch() {
 
       // Step 4: 記録を保存
       setSavingStep('記録を保存中...');
-      await saveMatch(newMatch as any);
+      console.log('Saving match data to Firestore...', newMatch);
+      
+      // 8秒タイムアウト付きで保存を実行
+      await Promise.race([
+        saveMatch(newMatch as any),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Firestoreへの保存がタイムアウトしました。Vercelの環境変数設定や、Firebaseのセキュリティルール、またはネットワーク接続を確認してください。')), 8000)
+        )
+      ]);
 
       // Step 5: totalExps を更新
-      await updateUserProfile(user.uid, nextExps);
+      console.log('Updating user XP profile in Firestore...', nextExps);
+      await Promise.race([
+        updateUserProfile(user.uid, nextExps),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('プロフィール更新がタイムアウトしました。')), 8000)
+        )
+      ]);
+
+      // 保存処理が成功したので、ローディング状態を解除
+      setIsSaving(false);
+      setSavingStep('');
+      console.log('Save completed successfully. Opening result modal.');
 
       // Step 6: リザルトモーダルの表示（閉じた後にLvUp判定へ進む）
       setSavedMatchId(matchId);
@@ -185,9 +204,9 @@ export default function NewMatch() {
       });
       setShowResultModal(true);
       
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('保存に失敗しました');
+      alert('保存に失敗しました:\n' + (err?.message || '予期せぬエラーが発生しました。'));
       setIsSaving(false);
       setSavingStep('');
     }
@@ -238,7 +257,7 @@ export default function NewMatch() {
     <>
       {/* Result Modal */}
       {showResultModal && resultData && (
-        <div className="modal-overlay" style={{zIndex: 100}}>
+        <div className="modal-overlay">
           <div className="glass-panel" style={{maxWidth: '400px', width: '90%', margin: '0 auto', position: 'relative'}}>
             <h2 className="text-xl font-bold mb-4 text-center" style={{color: 'var(--text-main)'}}>振り返り完了！</h2>
             <div className="mb-4 text-center">

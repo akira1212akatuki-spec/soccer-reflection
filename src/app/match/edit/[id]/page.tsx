@@ -132,11 +132,18 @@ export default function EditMatch() {
     };
     
     try {
-      await saveMatch(updatedMatch);
+      console.log('Updating match data in Firestore...', updatedMatch);
+      // 8秒タイムアウト付きで保存を実行
+      await Promise.race([
+        saveMatch(updatedMatch),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Firestoreへの保存がタイムアウトしました。Vercelの環境変数設定や、Firebaseのセキュリティルール、またはネットワーク接続を確認してください。')), 8000)
+        )
+      ]);
       router.push('/');
-    } catch(err) {
+    } catch(err: any) {
       console.error(err);
-      alert('保存に失敗しました');
+      alert('保存に失敗しました:\n' + (err?.message || '予期せぬエラーが発生しました。'));
     } finally {
       setIsSaving(false);
     }

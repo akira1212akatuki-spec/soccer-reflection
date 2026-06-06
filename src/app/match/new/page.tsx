@@ -257,28 +257,36 @@ export default function NewMatch() {
     <>
       {/* Result Modal */}
       {showResultModal && resultData && (
-        <div className="modal-overlay">
-          <div className="glass-panel" style={{maxWidth: '400px', width: '90%', margin: '0 auto', position: 'relative'}}>
-            <h2 className="text-xl font-bold mb-4 text-center" style={{color: 'var(--text-main)'}}>振り返り完了！</h2>
-            <div className="mb-4 text-center">
-              <p style={{fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '8px'}}>今週 {resultData.weeklyCount} 回目の入力です！</p>
-              <div style={{display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px', marginTop: '12px'}}>
+        <div className="rpg-result-overlay">
+          <div className="rpg-result-box">
+            <h2 className="rpg-result-title">▼ 振り返り完了！</h2>
+            
+            <div className="rpg-result-content">
+              <div className="rpg-text text-center mb-4">
+                今週 <span style={{ color: '#ffe066', fontSize: '1.2rem', fontWeight: 'bold' }}>{resultData.weeklyCount}</span> 回目の入力だ！
+              </div>
+
+              <div className="rpg-section-title">▶ 獲得経験値</div>
+              <div className="rpg-exp-badge-list">
                 {EXP_KEYS.map(key => resultData.earned[key] > 0 && (
-                  <span key={key} style={{background: 'var(--primary-color)', color: 'white', padding: '4px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold'}}>
-                    {EXP_LABELS[key]}: +{resultData.earned[key]}
-                  </span>
+                  <div key={key} className="rpg-exp-badge">
+                    {EXP_LABELS[key]} +{resultData.earned[key]} EXP
+                  </div>
                 ))}
               </div>
+
+              {resultData.aiAdvice && (
+                <>
+                  <div className="rpg-section-title">▶ AIコーチの分析</div>
+                  <div className="rpg-advice-box">
+                    {resultData.aiAdvice}
+                  </div>
+                </>
+              )}
             </div>
-            {resultData.aiAdvice && (
-              <div style={{background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', marginBottom: '24px'}}>
-                <h3 style={{fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '8px', color: 'var(--accent-color)'}}>AIコーチからのアドバイス</h3>
-                <p style={{fontSize: '0.85rem', lineHeight: '1.6', color: 'var(--text-main)', whiteSpace: 'pre-wrap'}}>{resultData.aiAdvice}</p>
-              </div>
-            )}
+
             <button 
-              className="btn btn-primary w-full"
-              style={{padding: '12px'}}
+              className="rpg-button"
               onClick={() => {
                 setShowResultModal(false);
                 if (levelUps.length > 0) {
@@ -288,7 +296,7 @@ export default function NewMatch() {
                 }
               }}
             >
-              次へ
+              ▶ つづける
             </button>
           </div>
         </div>
